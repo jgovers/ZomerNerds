@@ -1,9 +1,10 @@
 ! A fortran95 program for G95
 ! By WQY
+
+
 program main
   IMPLICIT NONE
-  INTEGER :: int
-  INTEGER, EXTERNAL :: Substraction
+  use :: testmodule
   INTEGER :: ans, a, b
     ans = Substraction(1,5)
   write(*,*) ans
@@ -16,9 +17,3 @@ INTEGER FUNCTION Addition(a, b)
     Addition = a+b
 END FUNCTION
 end program
-
-INTEGER FUNCTION Substraction(a, b)
-    IMPLICIT NONE
-    INTEGER, INTENT(IN) :: a, b
-    Substraction = a-b
-END FUNCTION
