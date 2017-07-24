@@ -7,15 +7,15 @@ SUBROUTINE DISCON ( avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, N
    ! generator-torque controller and PI collective blade pitch controller for
    ! the NREL Offshore 5MW baseline wind turbine.  This routine was written by
    ! J. Jonkman of NREL/NWTC for use in the IEA Annex XXIII OC3 studies.
-   
-   ! Modified by B. Jonkman to conform to ISO C Bindings (standard Fortran 2003) and 
+
+   ! Modified by B. Jonkman to conform to ISO C Bindings (standard Fortran 2003) and
    ! compile with either gfortran or Intel Visual Fortran (IVF)
    ! DO NOT REMOVE or MODIFY LINES starting with "!DEC$" or "!GCC$"
    ! !DEC$ specifies attributes for IVF and !GCC$ specifies attributes for gfortran
    !
    ! Note that gfortran v5.x on Mac produces compiler errors with the DLLEXPORT attribute,
    ! so I've added the compiler directive IMPLICIT_DLLEXPORT.
-   
+
 USE, INTRINSIC :: ISO_C_Binding
 
 IMPLICIT                        NONE
@@ -28,11 +28,11 @@ IMPLICIT                        NONE
 !REAL(C_FLOAT),          INTENT(INOUT) :: to_SC     (*)  ! DATA to the supercontroller
 
 
-REAL(C_FLOAT),          INTENT(INOUT) :: avrSWAP   (*)                  ! The swap array, used to pass data to, and receive data from, the DLL controller. 
+REAL(C_FLOAT),          INTENT(INOUT) :: avrSWAP   (*)                  ! The swap array, used to pass data to, and receive data from, the DLL controller.
 INTEGER(C_INT),         INTENT(INOUT) :: aviFAIL                        ! A flag used to indicate the success of this DLL call set as follows: 0 if the DLL call was successful, >0 if the DLL call was successful but cMessage should be issued as a warning messsage, <0 if the DLL call was unsuccessful or for any other reason the simulation is to be stopped at this point with cMessage as the error message.
 CHARACTER(KIND=C_CHAR), INTENT(IN)    :: accINFILE (NINT(avrSWAP(50)))  ! The name of the parameter input file, 'DISCON.IN'.
-CHARACTER(KIND=C_CHAR), INTENT(IN)    :: avcOUTNAME(NINT(avrSWAP(51)))  ! OUTNAME (Simulation RootName) 
-CHARACTER(KIND=C_CHAR), INTENT(INOUT) :: avcMSG    (NINT(avrSWAP(49)))  ! MESSAGE (Message from DLL to simulation code [ErrMsg])  The message which will be displayed by the calling program if aviFAIL <> 0.        
+CHARACTER(KIND=C_CHAR), INTENT(IN)    :: avcOUTNAME(NINT(avrSWAP(51)))  ! OUTNAME (Simulation RootName)
+CHARACTER(KIND=C_CHAR), INTENT(INOUT) :: avcMSG    (NINT(avrSWAP(49)))  ! MESSAGE (Message from DLL to simulation code [ErrMsg])  The message which will be displayed by the calling program if aviFAIL <> 0.
 
 
    ! Local Variables:
@@ -41,8 +41,10 @@ REAL(4)                      :: Alpha                                           
 REAL(4)                      :: BlPitch   (3)                                   ! Current values of the blade pitch angles, rad.
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller, sec.
 REAL(4), PARAMETER           :: CornerFreq    =       1.570796                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
-REAL(4)                      :: GenSpeed                                        ! Current  HSS (generator) speed, rad/s.
+REAL(4)                      :: GenSpeed
+REAL(4), Save                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
+REAL(4), SAVE                :: GenSpeedF2   !Temporary                                    ! Filtered HSS (generator) speed, rad/s.
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
@@ -101,7 +103,7 @@ CHARACTER(  25), PARAMETER   :: FmtDat    = "(F8.3,99('"//Tab//"',ES10.3E2,:))" 
 
 CHARACTER(SIZE(accINFILE)-1) :: InFile                                          ! a Fortran version of the input C string (not considered an array here)    [subtract 1 for the C null-character]
 CHARACTER(SIZE(avcOUTNAME)-1):: RootName                                        ! a Fortran version of the input C string (not considered an array here)    [subtract 1 for the C null-character]
-CHARACTER(SIZE(avcMSG)-1)    :: ErrMsg                                          ! a Fortran version of the C string argument (not considered an array here) [subtract 1 for the C null-character] 
+CHARACTER(SIZE(avcMSG)-1)    :: ErrMsg                                          ! a Fortran version of the C string argument (not considered an array here) [subtract 1 for the C null-character]
 
 
    ! Load variables from calling program (See Appendix A of Bladed User's Guide):
@@ -116,16 +118,16 @@ NumBl        = NINT( avrSWAP(61) )
 
 !BlPitch  (1) =       MIN( MAX( avrSWAP( 4), PC_MinPit ), PC_MaxPit )    ! assume that blade pitch can't exceed limits
 !BlPitch  (2) =       MIN( MAX( avrSWAP(33), PC_MinPit ), PC_MaxPit )    ! assume that blade pitch can't exceed limits
-!BlPitch  (3) =       MIN( MAX( avrSWAP(34), PC_MinPit ), PC_MaxPit )    ! assume that blade pitch can't exceed limits 
+!BlPitch  (3) =       MIN( MAX( avrSWAP(34), PC_MinPit ), PC_MaxPit )    ! assume that blade pitch can't exceed limits
 BlPitch  (1) =       avrSWAP( 4)
 BlPitch  (2) =       avrSWAP(33)
-BlPitch  (3) =       avrSWAP(34) 
+BlPitch  (3) =       avrSWAP(34)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
 Time         =       avrSWAP( 2)
-   
+
    ! Convert C character arrays to Fortran strings:
-   
+
 RootName = TRANSFER( avcOUTNAME(1:LEN(RootName)), RootName )
 I = INDEX(RootName,C_NULL_CHAR) - 1       ! if this has a c null character at the end...
 IF ( I > 0 ) RootName = RootName(1:I)     ! remove it
@@ -242,7 +244,7 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
       aviFAIL = -1
       ErrMsg  = 'PC_RefSpd must be greater than zero.'
    ENDIF
-   
+
    IF ( PC_MaxRat <= 0.0 )  THEN
       aviFAIL = -1
       ErrMsg  = 'PC_MaxRat must be greater than zero.'
@@ -265,19 +267,19 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
       WRITE (UnDb,'(A)')  'Time '//Tab//'ElapTime'//Tab//'HorWindV'//Tab//'GenSpeed'//Tab//'GenSpeedF'//Tab//'RelSpdErr'//Tab// &
                           'SpdErr '//Tab//'IntSpdErr'//Tab//'GK '//Tab//'PitComP'//Tab//'PitComI'//Tab//'PitComT'//Tab//        &
                           'PitRate1'//Tab//'PitRate2'//Tab//'PitRate3'//Tab//'PitCom1'//Tab//'PitCom2'//Tab//'PitCom3'//Tab// &
-                          'BlPitch1'//Tab//'BlPitch2'//Tab//'BlPitch3' 
+                          'BlPitch1'//Tab//'BlPitch2'//Tab//'BlPitch3'
       WRITE (UnDb,'(A)')  '(sec)'//Tab//'(sec)   '//Tab//'(m/sec) '//Tab//'(rpm)   '//Tab//'(rpm)    '//Tab//'(%)      '//Tab// &
                           '(rad/s)'//Tab//'(rad)    '//Tab//'(-)'//Tab//'(deg)  '//Tab//'(deg)  '//Tab//'(deg)  '//Tab//        &
                           '(deg/s) '//Tab//'(deg/s) '//Tab//'(deg/s) '//Tab//'(deg)  '//Tab//'(deg)  '//Tab//'(deg)  '//Tab// &
-                          '(deg)   '//Tab//'(deg)   '//Tab//'(deg)   ' 
+                          '(deg)   '//Tab//'(deg)   '//Tab//'(deg)   '
 
-      
+
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
-      
-      WRITE (UnDb2,'(A,85("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,85) 
+
+      WRITE (UnDb2,'(A,85("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,85)
       WRITE (UnDb2,'(A,85("'//Tab//'(-)"))')  '(s)'
-                 
+
    ENDIF
 
 
@@ -286,13 +288,15 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    !       below for simplicity, not here.
 
    GenSpeedF  = GenSpeed                        ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
+   GenSpeedF2 = 0       !Temporary
+   GenSpeedLast = 0
    PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
    GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
    IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
 
    LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
-   LastTimePC = Time - PC_DT                    ! This will ensure that the pitch  controller is called on the first pass 
-   LastTimeVS = Time - VS_DT                    ! This will ensure that the torque controller is called on the first pass 
+   LastTimePC = Time - PC_DT                    ! This will ensure that the pitch  controller is called on the first pass
+   LastTimeVS = Time - VS_DT                    ! This will ensure that the torque controller is called on the first pass
 
 
 ENDIF
@@ -311,7 +315,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    IF ( NINT(avrSWAP(10)) /= 0 )  THEN ! .TRUE. if a pitch angle actuator hasn't been requested
       aviFAIL = -1
       ErrMsg  = 'Pitch angle actuator not requested.'
-   ENDIF 
+   ENDIF
 
 
    ! Set unused outputs to zero (See Appendix A of Bladed User's Guide):
@@ -343,6 +347,15 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Apply the filter:
 
    GenSpeedF = ( 1.0 - Alpha )*GenSpeed + Alpha*GenSpeedF
+
+!=======================================================================
+
+    !Second filter type
+REAL :: K                       = 2 / VS_DT;
+
+GenSpeedF2 = K/(CornerFreq + K)*GenSpeed - K/(CornerFreq + K)*GenSpeedLast - (CornerFreq - K)/(CornerFreq + K)*GenSpeedF2;
+
+GenSpeedLast = GenSpeed;
 
 
 !=======================================================================
@@ -401,7 +414,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ENDIF
 
 
-   ! Set the generator contactor status, avrSWAP(35), to main (high speed) 
+   ! Set the generator contactor status, avrSWAP(35), to main (high speed)
    !   variable-speed generator, the torque override to yes, and command the
    !   generator torque (See Appendix A of Bladed User's Guide):
 
@@ -471,8 +484,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
          PitRate(K) = MIN( MAX( PitRate(K), -PC_MaxRat ), PC_MaxRat )   ! Saturate the pitch rate of blade K using its maximum absolute value
          PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
-         PitCom(K)  = MIN( MAX( PitCom(K), PC_MinPit ), PC_MaxPit )     ! Saturate the overall command using the pitch angle limits         
-         
+         PitCom(K)  = MIN( MAX( PitCom(K), PC_MinPit ), PC_MaxPit )     ! Saturate the overall command using the pitch angle limits
+
       ENDDO          ! K - all blades
 
 
@@ -486,13 +499,13 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       IF ( PC_DbgOut )  THEN
                         WRITE (UnDb,FmtDat)  Time, ElapTime, HorWindV, GenSpeed*RPS2RPM, GenSpeedF*RPS2RPM,           &
                                              100.0*SpdErr/PC_RefSpd, SpdErr, IntSpdErr, GK, PitComP*R2D, PitComI*R2D, &
-                                             PitComT*R2D, PitRate*R2D, PitCom*R2D, BlPitch*R2D 
-                                                
+                                             PitComT*R2D, PitRate*R2D, PitCom*R2D, BlPitch*R2D
+
       END IF
 
-   ENDIF   
-      
-      
+   ENDIF
+
+
    ! Set the pitch override to yes and command the pitch demanded from the last
    !   call to the controller (See Appendix A of Bladed User's Guide):
 
@@ -504,7 +517,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    avrSWAP(45) = PitCom(1) ! Use the command angle of blade 1 if using collective pitch
 
-      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85) 
+      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
 
 !=======================================================================
 
@@ -514,15 +527,15 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    LastTime = Time
 
 ELSEIF ( iStatus == -8 )  THEN
-   ! pack   
+   ! pack
    OPEN( Un, FILE=TRIM( InFile ), STATUS='UNKNOWN', FORM='UNFORMATTED' , ACCESS='STREAM', IOSTAT=ErrStat, ACTION='WRITE' )
 
    IF ( ErrStat /= 0 ) THEN
       ErrMsg  = 'Cannot open file "'//TRIM( InFile )//'". Another program may have locked it for writing.'
       aviFAIL = -1
    ELSE
-   
-      ! write all static variables to the checkpoint file (inverse of unpack):   
+
+      ! write all static variables to the checkpoint file (inverse of unpack):
       WRITE( Un, IOSTAT=ErrStat ) GenSpeedF               ! Filtered HSS (generator) speed, rad/s.
       WRITE( Un, IOSTAT=ErrStat ) IntSpdErr               ! Current integral of speed error w.r.t. time, rad.
       WRITE( Un, IOSTAT=ErrStat ) LastGenTrq              ! Commanded electrical generator torque the last time the controller was called, N-m.
@@ -534,11 +547,11 @@ ELSEIF ( iStatus == -8 )  THEN
       WRITE( Un, IOSTAT=ErrStat ) VS_Slope25              ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
       WRITE( Un, IOSTAT=ErrStat ) VS_SySp                 ! Synchronous speed of region 2 1/2 induction generator, rad/s.
       WRITE( Un, IOSTAT=ErrStat ) VS_TrGnSp               ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
-      
+
       CLOSE ( Un )
-      
-   END IF   
-   
+
+   END IF
+
 ELSEIF( iStatus == -9 ) THEN
    !unpack
    OPEN( Un, FILE=TRIM( InFile ), STATUS='OLD', FORM='UNFORMATTED', ACCESS='STREAM', IOSTAT=ErrStat, ACTION='READ' )
@@ -547,8 +560,8 @@ ELSEIF( iStatus == -9 ) THEN
       aviFAIL = -1
       ErrMsg  = ' Cannot open file "'//TRIM( InFile )//'" for reading. Another program may have locked.'
    ELSE
-      
-      ! READ all static variables from the restart file (inverse of pack):   
+
+      ! READ all static variables from the restart file (inverse of pack):
       READ( Un, IOSTAT=ErrStat ) GenSpeedF               ! Filtered HSS (generator) speed, rad/s.
       READ( Un, IOSTAT=ErrStat ) IntSpdErr               ! Current integral of speed error w.r.t. time, rad.
       READ( Un, IOSTAT=ErrStat ) LastGenTrq              ! Commanded electrical generator torque the last time the controller was called, N-m.
@@ -560,11 +573,11 @@ ELSEIF( iStatus == -9 ) THEN
       READ( Un, IOSTAT=ErrStat ) VS_Slope25              ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
       READ( Un, IOSTAT=ErrStat ) VS_SySp                 ! Synchronous speed of region 2 1/2 induction generator, rad/s.
       READ( Un, IOSTAT=ErrStat ) VS_TrGnSp               ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
-   
+
       CLOSE ( Un )
    END IF
-   
-   
+
+
 ENDIF
 
 avcMSG = TRANSFER( TRIM(ErrMsg)//C_NULL_CHAR, avcMSG, SIZE(avcMSG) )
