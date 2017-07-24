@@ -1,18 +1,10 @@
-! A fortran95 program for G95
-! By WQY
-
-
 program main
-  USE :: testmodule
-  IMPLICIT NONE
-  INTEGER :: ans, a, b
-    ans = Substraction(1,5)
-  write(*,*) ans
-CONTAINS
-    INTEGER FUNCTION Addition(a, b)
-        IMPLICIT NONE
-        INTEGER, INTENT(IN) :: a, b
-        Addition = a+b
-    END FUNCTION
-end program
+    implicit none
+    integer,parameter   :: rp = selected_real_kind(15)
+    real(kind=rp)        :: x,y
+    real(kind=rp),external  :: f
 
+    x = 3.0_rp
+    y = f(x)
+    print*,y
+end program main
