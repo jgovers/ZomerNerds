@@ -1,9 +1,24 @@
 ! A fortran95 program for G95
 ! By WQY
 program main
-  implicit none
+  IMPLICIT NONE
   INTEGER :: int
-  integer re_i
-  write(*,*) Addition(1,5)
-  re_i = system("pause")
-end
+  INTEGER, EXTERNAL :: Substraction
+  INTEGER :: ans, a, b
+    ans = Substraction(1,5)
+  write(*,*) ans
+
+contains
+
+INTEGER FUNCTION Addition(a, b)
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: a, b
+    Addition = a+b
+END FUNCTION
+end program
+
+INTEGER FUNCTION Substraction(a, b)
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: a, b
+    Substraction = a-b
+END FUNCTION
