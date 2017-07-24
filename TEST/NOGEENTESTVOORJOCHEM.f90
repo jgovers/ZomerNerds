@@ -1,7 +1,3 @@
 program main
-    implicit none
-    integer :: a
-    a = 5
-    write(*,*) a
+    print *, "Hello World!"
 end program main
-
