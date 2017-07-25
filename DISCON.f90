@@ -45,7 +45,6 @@ REAL(4)                      :: GenSpeed
 REAL(4), SAVE                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF2Last
-REAL(4)                      :: TK                                              ! Variable used in filter
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
@@ -546,8 +545,25 @@ SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
 
 END SUBROUTINE LPFilter
 
-    !This turned out to be a High Pass Filter
-    !TK = 2.0 / DT
-    !GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
-    !GenSpeedLast = GenSpeed
+SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
+! Discrete time High-Pass Filter
 
+    IMPLICIT NONE
+
+    REAL(4), INTENT(IN)     :: iStatus,InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+    REAL(4), INTENT(INOUT)  :: OutputSignal
+    REAL(4), SAVE           :: InputSignalLast
+    REAL(4)                 :: K
+
+    IF ( iStatus == 0 )  THEN            ! .TRUE. if we're on the first call to the DLL
+        OutputSignal    = InputSignal    ! Initialization of Output
+        InputSignalLast = InputSignal    ! Initialization of previous Input
+    ENDIF
+
+    K = 2.0 / DT
+
+    OutputSignal = K/(CornerFreq + K)*InputSignal - K/(CornerFreq + K)*InputSignalLast - (CornerFreq - K)/(CornerFreq + K)*OutputSignal
+
+    InputSignalLast = InputSignal       !Save input signal for next time step
+
+END SUBROUTINE HPFilter
