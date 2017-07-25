@@ -45,6 +45,7 @@ REAL(4)                      :: GenSpeed
 REAL(4), Save                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF2   !Temporary                                    ! Filtered HSS (generator) speed, rad/s.
+REAL(4)                      :: TK                                              ! Variable used in filter
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
@@ -268,7 +269,7 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'SpdErr '//Tab//'IntSpdErr'//Tab//'GK '//Tab//'PitComP'//Tab//'PitComI'//Tab//'PitComT'//Tab//        &
                           'PitRate1'//Tab//'PitRate2'//Tab//'PitRate3'//Tab//'PitCom1'//Tab//'PitCom2'//Tab//'PitCom3'//Tab// &
                           'BlPitch1'//Tab//'BlPitch2'//Tab//'BlPitch3'
-      WRITE (UnDb,'(A)')  '(sec)'//Tab//'(sec)   '//Tab//'(m/sec) '//Tab//'(rpm)   '//Tab//'(rpm)    '//Tab//'(%)      '//Tab// &
+      WRITE (UnDb,'(A)')  '(sec)'//Tab//'(sec)   '//Tab//'(m/sec) '//Tab//'(rpm)   '//Tab//'(rpm)    '//Tab//'(rpm)    '//Tab//'(%)      '//Tab// &
                           '(rad/s)'//Tab//'(rad)    '//Tab//'(-)'//Tab//'(deg)  '//Tab//'(deg)  '//Tab//'(deg)  '//Tab//        &
                           '(deg/s) '//Tab//'(deg/s) '//Tab//'(deg/s) '//Tab//'(deg)  '//Tab//'(deg)  '//Tab//'(deg)  '//Tab// &
                           '(deg)   '//Tab//'(deg)   '//Tab//'(deg)   '
@@ -351,11 +352,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 !=======================================================================
 
     !Second filter type
-REAL :: TK                       = 2 / VS_DT;
+    TK = 2 / VS_DT
 
-GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2;
-
-GenSpeedLast = GenSpeed;
+    GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2;
+    GenSpeedLast = GenSpeed;
 
 
 !=======================================================================
