@@ -351,9 +351,9 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 !=======================================================================
 
     !Second filter type
-REAL :: K                       = 2 / VS_DT;
+REAL :: TK                       = 2 / VS_DT;
 
-GenSpeedF2 = K/(CornerFreq + K)*GenSpeed - K/(CornerFreq + K)*GenSpeedLast - (CornerFreq - K)/(CornerFreq + K)*GenSpeedF2;
+GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2;
 
 GenSpeedLast = GenSpeed;
 
