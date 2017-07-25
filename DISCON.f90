@@ -37,7 +37,6 @@ CHARACTER(KIND=C_CHAR), INTENT(INOUT) :: avcMSG    (NINT(avrSWAP(49)))  ! MESSAG
 
    ! Local Variables:
 
-REAL(4)                      :: Alpha                                           ! Current coefficient in the recursive, single-pole, low-pass filter, (-).
 REAL(4)                      :: BlPitch   (3)                                   ! Current values of the blade pitch angles, rad.
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller, sec.
 REAL(4), PARAMETER           :: CornerFreq    =       1.570796                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
@@ -331,26 +330,13 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    avrSWAP(80) = 0.0 ! Variable slip current status
    avrSWAP(81) = 0.0 ! Variable slip current demand
 
-
 !=======================================================================
 
-
-   ! Filter the HSS (generator) speed measurement:
-   ! NOTE: This is a very simple recursive, single-pole, low-pass filter with
-   !       exponential smoothing.
-
-   ! Update the coefficient in the recursive formula based on the elapsed time
-   !   since the last call to the controller:
-
-   Alpha     = EXP( ( LastTime - Time )*CornerFreq )
-
-
-   ! Apply the filter:
-
-   GenSpeedF = ( 1.0 - Alpha )*GenSpeed + Alpha*GenSpeedF
+    ! Filter the HSS (generator) speed measurement:
+    ! Apply Low-Pass Filter
+    CALL LPFilter(iStatus,GenSpeed,VS_DT,CornerFreqF2,GenSpeedF2)
 
 !=======================================================================
-
 
    ! Variable-speed torque control:
 
@@ -366,15 +352,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    IF ( ( Time*OnePlusEps - LastTimeVS ) >= VS_DT )  THEN
 
-    CALL LPFilter(iStatus,GenSpeed,VS_DT,CornerFreqF2,GenSpeedF2) ! Use Low-Pass Filter
-
-    !Second filter type
-    !This turned out to be a High Pass Filter
-    !TK = 2.0 / VS_DT
-    !GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
-    !GenSpeedLast = GenSpeed
-
-   ! Compute the generator torque, which depends on which region we are in:
+    ! Compute the generator torque, which depends on which region we are in:
 
       IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
          GenTrq = VS_RtPwr/GenSpeedF
@@ -603,3 +581,9 @@ SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
     InputSignalLast   = InputSignal     !Save input signal for next time step
 
 END SUBROUTINE LPFilter
+
+    !This turned out to be a High Pass Filter
+    !TK = 2.0 / VS_DT
+    !GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
+    !GenSpeedLast = GenSpeed
+
