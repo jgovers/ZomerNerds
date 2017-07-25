@@ -41,10 +41,12 @@ REAL(4)                      :: Alpha                                           
 REAL(4)                      :: BlPitch   (3)                                   ! Current values of the blade pitch angles, rad.
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller, sec.
 REAL(4), PARAMETER           :: CornerFreq    =       1.570796                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
+REAL(4), PARAMETER           :: CornerFreqF2  =       40.0
 REAL(4)                      :: GenSpeed
 REAL(4), SAVE                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF2   !Temporary                                    ! Filtered HSS (generator) speed, rad/s.
+REAL(4), SAVE                :: GenSpeedF2Last
 REAL(4)                      :: TK                                              ! Variable used in filter
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
@@ -289,8 +291,9 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    !       below for simplicity, not here.
 
    GenSpeedF  = GenSpeed                        ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
-   GenSpeedF2 = 0       !Temporary
-   GenSpeedLast = 0
+   GenSpeedF2 = GenSpeed       !Temporary
+   GenSpeedLast = GenSpeed
+   GenSpeedF2Last = GenSpeed
    PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
    GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
    IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
@@ -358,7 +361,6 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    ElapTime = Time - LastTimeVS
 
-
    ! Only perform the control calculations if the elapsed time is greater than
    !   or equal to the communication interval of the torque controller:
    ! NOTE: Time is scaled by OnePlusEps to ensure that the contoller is called
@@ -367,10 +369,17 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    IF ( ( Time*OnePlusEps - LastTimeVS ) >= VS_DT )  THEN
 
+
+   GenSpeedF2 = (VS_DT*CornerFreqF2*GenSpeed + VS_DT*CornerFreqF2*GenSpeedLast - (VS_DT*CornerFreqF2-2.0)*GenSpeedF2Last)/(VS_DT*CornerFreqF2+2.0);
+
+   GenSpeedLast = GenSpeed  !Save input signal for next time step
+   GenSpeedF2Last = GenSpeedF2 !Save output signal for next time step
+
     !Second filter type
-    TK = 2.0 / VS_DT
-    GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
-    GenSpeedLast = GenSpeed
+    !This turned out to be a High Pass Filter
+    !TK = 2.0 / VS_DT
+    !GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
+    !GenSpeedLast = GenSpeed
 
    ! Compute the generator torque, which depends on which region we are in:
 
