@@ -524,6 +524,7 @@ RETURN
 END SUBROUTINE DISCON
 
 !=======================================================================
+!=======================================================================
 
 SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
 ! Discrete time Low-Pass Filter
@@ -544,6 +545,8 @@ SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
     InputSignalLast   = InputSignal     !Save input signal for next time step
 
 END SUBROUTINE LPFilter
+
+!=======================================================================
 
 SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
 ! Discrete time High-Pass Filter
@@ -567,3 +570,5 @@ SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
     InputSignalLast = InputSignal       !Save input signal for next time step
 
 END SUBROUTINE HPFilter
+
+!=======================================================================
