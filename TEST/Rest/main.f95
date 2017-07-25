@@ -1,9 +1,8 @@
 PROGRAM MainTest
     IMPLICIT NONE
     REAL(4)                 :: x,y
-    REAL(4), EXTERNAL       :: f
 
-    x = 3.0_rp
-    y = f(x)
+    x = 3.0
+    CALL f(x,y)
     print*,y
 END PROGRAM MainTest
