@@ -291,9 +291,6 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    !       below for simplicity, not here.
 
    GenSpeedF  = GenSpeed                        ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
-   GenSpeedF2 = GenSpeed       !Temporary
-   GenSpeedLast = GenSpeed
-   GenSpeedF2Last = GenSpeed
    PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
    GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
    IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
@@ -369,11 +366,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    IF ( ( Time*OnePlusEps - LastTimeVS ) >= VS_DT )  THEN
 
-
-   GenSpeedF2 = (VS_DT*CornerFreqF2*GenSpeed + VS_DT*CornerFreqF2*GenSpeedLast - (VS_DT*CornerFreqF2-2.0)*GenSpeedF2Last)/(VS_DT*CornerFreqF2+2.0);
-
-   GenSpeedLast = GenSpeed  !Save input signal for next time step
-   GenSpeedF2Last = GenSpeedF2 !Save output signal for next time step
+    !CALL GenSpeedLPF(iStatus,GenSpeed,VS_DT,CornerFreqF2,GenSpeedF2)
+    CALL GenSpeedLPF(GenSpeedF2,VS_DT)
 
     !Second filter type
     !This turned out to be a High Pass Filter
