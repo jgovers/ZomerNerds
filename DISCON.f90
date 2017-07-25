@@ -42,7 +42,7 @@ REAL(4)                      :: BlPitch   (3)                                   
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller, sec.
 REAL(4), PARAMETER           :: CornerFreq    =       1.570796                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
 REAL(4)                      :: GenSpeed
-REAL(4), Save                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
+REAL(4), SAVE                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF2   !Temporary                                    ! Filtered HSS (generator) speed, rad/s.
 REAL(4)                      :: TK                                              ! Variable used in filter
@@ -351,15 +351,6 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 !=======================================================================
 
-    !Second filter type
-    TK = 2 / VS_DT
-
-    GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2;
-    GenSpeedLast = GenSpeed;
-
-
-!=======================================================================
-
 
    ! Variable-speed torque control:
 
@@ -376,6 +367,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    IF ( ( Time*OnePlusEps - LastTimeVS ) >= VS_DT )  THEN
 
+    !Second filter type
+    TK = 2.0 / VS_DT
+    GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
+    GenSpeedLast = GenSpeed
 
    ! Compute the generator torque, which depends on which region we are in:
 
