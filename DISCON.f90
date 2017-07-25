@@ -38,8 +38,9 @@ CHARACTER(KIND=C_CHAR), INTENT(INOUT) :: avcMSG    (NINT(avrSWAP(49)))  ! MESSAG
    ! Local Variables:
 
 REAL(4)                      :: BlPitch   (3)                                   ! Current values of the blade pitch angles, rad.
+REAL(4)                      :: DT                                              ! Time step [s]
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller, sec.
-REAL(4), PARAMETER           :: CornerFreq    =       40.0                      ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
+REAL(4), PARAMETER           :: CornerFreq    =      40.0                       ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
 REAL(4)                      :: GenSpeed
 REAL(4), SAVE                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
@@ -53,8 +54,6 @@ REAL(4), SAVE                :: LastGenTrq                                      
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, sec.
 REAL(4), SAVE                :: LastTimeVS                                      ! Last time the torque controller was called, sec.
-REAL(4), PARAMETER           :: OnePlusEps    = 1.0 + EPSILON(OnePlusEps)       ! The number slighty greater than unity in single precision.
-REAL(4), PARAMETER           :: PC_DT         = 0.000125  !JASON:THIS CHANGED FOR ITI BARGE:      0.0001                    ! Communication interval for pitch  controller, sec.
 REAL(4), PARAMETER           :: PC_KI         =       0.008068634               ! Integral gain for pitch controller at rated pitch (zero), (-).
 REAL(4), PARAMETER           :: PC_KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
 REAL(4), PARAMETER           :: PC_KP         =       0.01882681                ! Proportional gain for pitch controller at rated pitch (zero), sec.
@@ -73,7 +72,6 @@ REAL(4)                      :: SpdErr                                          
 REAL(4)                      :: Time                                            ! Current simulation time, sec.
 REAL(4)                      :: TrqRate                                         ! Torque rate based on the current and last torque commands, N-m/s.
 REAL(4), PARAMETER           :: VS_CtInSp     =      70.16224                   ! Transitional generator speed (HSS side) between regions 1 and 1 1/2, rad/s.
-REAL(4), PARAMETER           :: VS_DT         = 0.000125  !JASON:THIS CHANGED FOR ITI BARGE:      0.0001                    ! Communication interval for torque controller, sec.
 REAL(4), PARAMETER           :: VS_MaxRat     =   15000.0                       ! Maximum torque rate (in absolute value) in torque controller, N-m/s.
 REAL(4), PARAMETER           :: VS_MaxTq      =   47402.91                      ! Maximum generator torque in Region 3 (HSS side), N-m. -- chosen to be 10% above VS_RtTq = 43.09355kNm
 REAL(4), PARAMETER           :: VS_Rgn2K      =       2.332287                  ! Generator torque constant in Region 2 (HSS side), N-m/(rad/s)^2.
@@ -125,6 +123,7 @@ BlPitch  (3) =       avrSWAP(34)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
 Time         =       avrSWAP( 2)
+DT           =       avrSWAP( 3)
 
    ! Convert C character arrays to Fortran strings:
 
@@ -175,9 +174,9 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
       ErrMsg  = 'CornerFreq must be greater than zero.'
    ENDIF
 
-   IF ( VS_DT     <= 0.0 )  THEN
+   IF ( DT     <= 0.0 )  THEN
       aviFAIL = -1
-      ErrMsg  = 'VS_DT must be greater than zero.'
+      ErrMsg  = 'DT must be greater than zero.'
    ENDIF
 
    IF ( VS_CtInSp <  0.0 )  THEN
@@ -223,11 +222,6 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    IF ( VS_MaxTq                     < VS_RtPwr/VS_RtGnSp )  THEN
       aviFAIL = -1
       ErrMsg  = 'VS_RtPwr/VS_RtGnSp must not be greater than VS_MaxTq.'
-   ENDIF
-
-   IF ( PC_DT     <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'PC_DT must be greater than zero.'
    ENDIF
 
    IF ( PC_KI     <= 0.0 )  THEN
@@ -292,8 +286,8 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
 
    LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
-   LastTimePC = Time - PC_DT                    ! This will ensure that the pitch  controller is called on the first pass
-   LastTimeVS = Time - VS_DT                    ! This will ensure that the torque controller is called on the first pass
+   LastTimePC = Time - DT                       ! This will ensure that the pitch  controller is called on the first pass
+   LastTimeVS = Time - DT                       ! This will ensure that the torque controller is called on the first pass
 
 
 ENDIF
@@ -331,7 +325,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
     ! Filter the HSS (generator) speed measurement:
     ! Apply Low-Pass Filter
-    CALL LPFilter(iStatus,GenSpeed,VS_DT,CornerFreq,GenSpeedF)
+    CALL LPFilter(iStatus,GenSpeed,DT,CornerFreq,GenSpeedF)
 
 !=======================================================================
 
@@ -553,7 +547,7 @@ SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
 END SUBROUTINE LPFilter
 
     !This turned out to be a High Pass Filter
-    !TK = 2.0 / VS_DT
+    !TK = 2.0 / DT
     !GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
     !GenSpeedLast = GenSpeed
 
