@@ -366,8 +366,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    IF ( ( Time*OnePlusEps - LastTimeVS ) >= VS_DT )  THEN
 
-    !CALL GenSpeedLPF(iStatus,GenSpeed,VS_DT,CornerFreqF2,GenSpeedF2)
-    CALL GenSpeedLPF(GenSpeedF2,VS_DT)
+    CALL LPFilter(iStatus,GenSpeed,VS_DT,CornerFreqF2,GenSpeedF2) ! Use Low-Pass Filter
 
     !Second filter type
     !This turned out to be a High Pass Filter
@@ -582,4 +581,25 @@ avcMSG = TRANSFER( TRIM(ErrMsg)//C_NULL_CHAR, avcMSG, SIZE(avcMSG) )
 
 RETURN
 END SUBROUTINE DISCON
+
 !=======================================================================
+
+SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
+! Discrete time Low-Pass Filter
+
+    IMPLICIT NONE
+
+    REAL(4), INTENT(IN)     :: iStatus,InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+    REAL(4), INTENT(INOUT)  :: OutputSignal
+    REAL(4), SAVE           :: InputSignalLast
+
+    IF ( iStatus == 0 )  THEN           ! .TRUE. if we're on the first call to the DLL
+       OutputSignal    = InputSignal    ! Initialization of Output
+       InputSignalLast = InputSignal    ! Initialization of previous Input
+    ENDIF
+
+    OutputSignal     = (DT*CornerFreq*InputSignal + DT*CornerFreq*InputSignalLast - (DT*CornerFreq-2.0)*OutputSignal)/(DT*CornerFreq+2.0);
+
+    InputSignalLast   = InputSignal     !Save input signal for next time step
+
+END SUBROUTINE LPFilter

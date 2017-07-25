@@ -1,4 +1,5 @@
 SUBROUTINE f(x,y,a)
+    USE                     :: SecondSub
 
     IMPLICIT NONE
     REAL(4), INTENT(INOUT)  :: x,y,a
