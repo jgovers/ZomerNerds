@@ -39,12 +39,10 @@ CHARACTER(KIND=C_CHAR), INTENT(INOUT) :: avcMSG    (NINT(avrSWAP(49)))  ! MESSAG
 
 REAL(4)                      :: BlPitch   (3)                                   ! Current values of the blade pitch angles, rad.
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller, sec.
-REAL(4), PARAMETER           :: CornerFreq    =       1.570796                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
-REAL(4), PARAMETER           :: CornerFreqF2  =       40.0
+REAL(4), PARAMETER           :: CornerFreq    =       40.0                      ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
 REAL(4)                      :: GenSpeed
 REAL(4), SAVE                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
-REAL(4), SAVE                :: GenSpeedF2   !Temporary                                    ! Filtered HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF2Last
 REAL(4)                      :: TK                                              ! Variable used in filter
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
@@ -266,11 +264,11 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
       OPEN ( UnDb, FILE=TRIM( RootName )//'.dbg', STATUS='REPLACE' )
 
       WRITE (UnDb,'(/////)')
-      WRITE (UnDb,'(A)')  'Time '//Tab//'ElapTime'//Tab//'HorWindV'//Tab//'GenSpeed'//Tab//'GenSpeedF'//Tab//'GenSpeedF2'//Tab//'RelSpdErr'//Tab// &
+      WRITE (UnDb,'(A)')  'Time '//Tab//'ElapTime'//Tab//'HorWindV'//Tab//'GenSpeed'//Tab//'GenSpeedF'//Tab//'RelSpdErr'//Tab// &
                           'SpdErr '//Tab//'IntSpdErr'//Tab//'GK '//Tab//'PitComP'//Tab//'PitComI'//Tab//'PitComT'//Tab//        &
                           'PitRate1'//Tab//'PitRate2'//Tab//'PitRate3'//Tab//'PitCom1'//Tab//'PitCom2'//Tab//'PitCom3'//Tab// &
                           'BlPitch1'//Tab//'BlPitch2'//Tab//'BlPitch3'
-      WRITE (UnDb,'(A)')  '(sec)'//Tab//'(sec)   '//Tab//'(m/sec) '//Tab//'(rpm)   '//Tab//'(rpm)    '//Tab//'(rpm)    '//Tab//'(%)      '//Tab// &
+      WRITE (UnDb,'(A)')  '(sec)'//Tab//'(sec)   '//Tab//'(m/sec) '//Tab//'(rpm)   '//Tab//'(rpm)    '//Tab//'(%)      '//Tab// &
                           '(rad/s)'//Tab//'(rad)    '//Tab//'(-)'//Tab//'(deg)  '//Tab//'(deg)  '//Tab//'(deg)  '//Tab//        &
                           '(deg/s) '//Tab//'(deg/s) '//Tab//'(deg/s) '//Tab//'(deg)  '//Tab//'(deg)  '//Tab//'(deg)  '//Tab// &
                           '(deg)   '//Tab//'(deg)   '//Tab//'(deg)   '
@@ -289,7 +287,6 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    ! NOTE: LastGenTrq, though SAVEd, is initialized in the torque controller
    !       below for simplicity, not here.
 
-   GenSpeedF  = GenSpeed                        ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
    PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
    GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
    IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
@@ -334,7 +331,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
     ! Filter the HSS (generator) speed measurement:
     ! Apply Low-Pass Filter
-    CALL LPFilter(iStatus,GenSpeed,VS_DT,CornerFreqF2,GenSpeedF2)
+    CALL LPFilter(iStatus,GenSpeed,VS_DT,CornerFreq,GenSpeedF)
 
 !=======================================================================
 
@@ -344,15 +341,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    ElapTime = Time - LastTimeVS
 
-   ! Only perform the control calculations if the elapsed time is greater than
-   !   or equal to the communication interval of the torque controller:
-   ! NOTE: Time is scaled by OnePlusEps to ensure that the contoller is called
-   !       at every time step when VS_DT = DT, even in the presence of
-   !       numerical precision errors.
-
-   IF ( ( Time*OnePlusEps - LastTimeVS ) >= VS_DT )  THEN
-
-    ! Compute the generator torque, which depends on which region we are in:
+     ! Compute the generator torque, which depends on which region we are in:
 
       IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
          GenTrq = VS_RtPwr/GenSpeedF
@@ -386,9 +375,6 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       LastGenTrq = GenTrq
 
 
-   ENDIF
-
-
    ! Set the generator contactor status, avrSWAP(35), to main (high speed)
    !   variable-speed generator, the torque override to yes, and command the
    !   generator torque (See Appendix A of Bladed User's Guide):
@@ -397,25 +383,13 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    avrSWAP(56) = 0.0          ! Torque override: 0=yes
    avrSWAP(47) = LastGenTrq   ! Demanded generator torque
 
-
 !=======================================================================
-
 
    ! Pitch control:
 
    ! Compute the elapsed time since the last call to the controller:
 
    ElapTime = Time - LastTimePC
-
-
-   ! Only perform the control calculations if the elapsed time is greater than
-   !   or equal to the communication interval of the pitch controller:
-   ! NOTE: Time is scaled by OnePlusEps to ensure that the contoller is called
-   !       at every time step when PC_DT = DT, even in the presence of
-   !       numerical precision errors.
-
-   IF ( ( Time*OnePlusEps - LastTimePC ) >= PC_DT )  THEN
-
 
    ! Compute the gain scheduling correction factor based on the previously
    !   commanded pitch angle for blade 1:
@@ -472,14 +446,11 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Output debugging information if requested:
 
       IF ( PC_DbgOut )  THEN
-                        WRITE (UnDb,FmtDat)  Time, ElapTime, HorWindV, GenSpeed*RPS2RPM, GenSpeedF*RPS2RPM, GenSpeedF2*RPS2RPM,           &
+                        WRITE (UnDb,FmtDat)  Time, ElapTime, HorWindV, GenSpeed*RPS2RPM, GenSpeedF*RPS2RPM,           &
                                              100.0*SpdErr/PC_RefSpd, SpdErr, IntSpdErr, GK, PitComP*R2D, PitComI*R2D, &
                                              PitComT*R2D, PitRate*R2D, PitCom*R2D, BlPitch*R2D
 
       END IF
-
-   ENDIF
-
 
    ! Set the pitch override to yes and command the pitch demanded from the last
    !   call to the controller (See Appendix A of Bladed User's Guide):
@@ -495,7 +466,6 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
 
 !=======================================================================
-
 
    ! Reset the value of LastTime to the current value:
 
