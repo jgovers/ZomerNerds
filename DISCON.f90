@@ -587,6 +587,16 @@ END SUBROUTINE HPFilter
 
 !=======================================================================
 
+SUBROUTINE NotchFilter
+! Discrete time inverted Notch Filter
 
+    IMPLICIT NONE
+
+    OutputSignal    = 1/(4+2*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
+        ( (8-2*DT**2*ConerFreq**2)*OutputSignalLast1 + (-4+2*DT*Damp*CornerFeq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
+        (2*DT*Damp*CornerFreq*K)*InputSignal + (-2*DT*Damp*CornerFreq*K)*InputSignalLast2 )
+
+
+END SUBROUTINE
 
 !=======================================================================
