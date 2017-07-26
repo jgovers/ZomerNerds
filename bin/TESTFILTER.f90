@@ -1,9 +1,0 @@
-SUBROUTINE GenSpeedLPF(GenSpeedF2,VS_DT)
-
-    IMPLICIT NONE
-    REAL(4), INTENT(IN)     :: VS_DT
-    REAL(4), INTENT(INOUT)  :: GenSpeedF2
-
-    GenSpeedF2 = GenSpeedF2 + VS_DT*10000.0
-
-END SUBROUTINE GenSpeedLPF
