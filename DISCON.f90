@@ -543,7 +543,8 @@ SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
 
     IMPLICIT NONE
 
-    REAL(4), INTENT(IN)     :: iStatus,InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+	INTEGER, INTENT(IN)		:: iStatus
+    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
     REAL(4), INTENT(INOUT)  :: OutputSignal
     REAL(4), SAVE           :: InputSignalLast
 
@@ -565,7 +566,8 @@ SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
 
     IMPLICIT NONE
 
-    REAL(4), INTENT(IN)     :: iStatus,InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+	INTEGER, INTENT(IN)		:: iStatus
+    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
     REAL(4), INTENT(INOUT)  :: OutputSignal
     REAL(4), SAVE           :: InputSignalLast
     REAL(4)                 :: K
