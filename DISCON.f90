@@ -659,8 +659,8 @@ SUBROUTINE ColmanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect
 	REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
 	REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
 
-	axisDirect	= 2/3 * cos(aziAngle)*rootMOOP1 + cos(aziAngle+phi2)*rootMOOP2 + cos(aziAngle+phi3)*rootMOOP3
-	axisQuadr	= 2/3 * cos(aziAngle)*rootMOOP1 + cos(aziAngle+phi2)*rootMOOP2 + cos(aziAngle+phi3)*rootMOOP3
+	axisDirect	= 2/3 * (cos(aziAngle)*rootMOOP1 + cos(aziAngle+phi2)*rootMOOP2 + cos(aziAngle+phi3)*rootMOOP3)
+	axisQuadr	= 2/3 * (sin(aziAngle)*rootMOOP1 + sin(aziAngle+phi2)*rootMOOP2 + sin(aziAngle+phi3)*rootMOOP3)
 
 END SUBROUTINE ColmanTransform
 
