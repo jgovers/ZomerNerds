@@ -358,7 +358,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       IF ( iStatus == 0 )  LastGenTrq = GenTrq                 ! Initialize the value of LastGenTrq on the first pass only
       TrqRate = ( GenTrq - LastGenTrq )/ElapTime               ! Torque rate (unsaturated)
-      TrqRate = MIN( MAX( TrqRate, -VS_MaxRat ), VS_MaxRat )   ! Saturate the torque rate using its maximum absolute value
+      TrqRate = saturate(TrqRate, -VS_MaxRat, VS_MaxRat) 	   ! Saturate the torque rate using its maximum absolute value
       GenTrq  = LastGenTrq + TrqRate*ElapTime                  ! Saturate the command using the torque rate limit
 
 
@@ -395,8 +395,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       SpdErr    = GenSpeedF - PC_RefSpd                                 ! Current speed error
       IntSpdErr = IntSpdErr + SpdErr*ElapTime                           ! Current integral of speed error w.r.t. time
-      IntSpdErr = MIN( MAX( IntSpdErr, PC_MinPit/( GK*PC_KI ) ), &
-                                       PC_MaxPit/( GK*PC_KI )      )    ! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
+      IntSpdErr = saturate(IntSpdErr, PC_MinPit/( GK*PC_KI ), &
+											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
    ! Compute the pitch commands associated with the proportional and integral
@@ -410,7 +410,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    !   saturate the overall command using the pitch angle limits:
 
       PitComT   = PitComP + PitComI                                     ! Overall command (unsaturated)
-      PitComT   = MIN( MAX( PitComT, PC_MinPit ), PC_MaxPit )           ! Saturate the overall command using the pitch angle limits
+      PitComT   = saturate(PitComT, PC_MinPit, PC_MaxPit)				! Saturate the overall command using the pitch angle limits
 
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
@@ -423,10 +423,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       DO K = 1,NumBl ! Loop through all blades
 
          PitRate(K) = ( PitComT - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
-         PitRate(K) = MIN( MAX( PitRate(K), -PC_MaxRat ), PC_MaxRat )   ! Saturate the pitch rate of blade K using its maximum absolute value
+         PitRate(K) = saturate(PitRate(K), -PC_MaxRat, PC_MaxRat)		! Saturate the pitch rate of blade K using its maximum absolute value
          PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
-         PitCom(K)  = MIN( MAX( PitCom(K), PC_MinPit ), PC_MaxPit )     ! Saturate the overall command using the pitch angle limits
+         PitCom(K)  = saturate(PitCom(K), PC_MinPit, PC_MaxPit)			! Saturate the overall command using the pitch angle limits
 
       ENDDO          ! K - all blades
 
@@ -570,5 +570,16 @@ SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
     InputSignalLast = InputSignal       !Save input signal for next time step
 
 END SUBROUTINE HPFilter
+
+!=======================================================================
+
+REAL FUNCTION saturate(inputValue, minValue, maxValue)
+! Saturates inputValue. Makes sure it is not smaller than minValue and not larger than maxValue
+
+	IMPLICIT NONE
+	REAL(4), INTENT(IN)		:: inputValue, minValue, maxValue
+	saturate = MIN( MAX( inputValue, minValue ), maxValue)
+
+END FUNCTION saturate
 
 !=======================================================================
