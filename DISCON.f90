@@ -578,22 +578,71 @@ CONTAINS	!Lists the functions and subroutines used in DISCON
 
 	END FUNCTION HPFilter
 
+	REAL FUNCTION NotchFilter(InputSignal,DT,Damp,CornerFreq,K,iStatus)
+	! Discrete time inverted Notch Filter
+
+		IMPLICIT NONE
+
+		REAL(4), INTENT(IN)     :: InputSignal,DT,Damp,CornerFreq,K    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+		INTEGER, INTENT(IN)		:: iStatus
+		REAL(4), SAVE           :: InputSignalLast1,InputSignalLast2,OutputSignalLast1,OutputSignalLast2
+
+		IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
+			OutputSignalLast1   = InputSignal	! Initialization of Output
+			OutputSignalLast2   = InputSignal
+			InputSignalLast1    = InputSignal
+			InputSignalLast2    = InputSignal   !Initialization of previous Input
+
+		ENDIF
+
+		K = 2.0 / DT
+
+        NotchFilter        = 1/(4+2*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
+            ( (8-2*DT**2*CornerFreq**2)*OutputSignalLast1 + (-4+2*DT*Damp*CornerFreq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
+            (2*DT*Damp*CornerFreq*K)*InputSignal + (-2*DT*Damp*CornerFreq*K)*InputSignalLast2 )
+
+		InputSignalLast2    = InputSignalLast1
+		InputSignalLast1    = InputSignal			!Save input signal for next time step
+		OutputSignalLast2   = OutputSignalLast1		!Save input signal for next time step
+        OutputSignalLast1   = NotchFilter
+
+	END FUNCTION HPFilter
+
+	REAL FUNCTION SecLPFilter(InputSignal,DT,Damp,CornerFreq,K,iStatus)
+	! Discrete time second order Low-Pass Filter
+
+		IMPLICIT NONE
+
+		REAL(4), INTENT(IN)     :: InputSignal,DT,Damp,CornerFreq,K    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+		INTEGER, INTENT(IN)		:: iStatus
+		REAL(4), SAVE           :: InputSignalLast1,InputSignalLast2,OutputSignalLast1,OutputSignalLast2
+
+		IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
+			OutputSignalLast1   = InputSignal	! Initialization of Output
+			OutputSignalLast2   = InputSignal
+			InputSignalLast1    = InputSignal
+			InputSignalLast2    = InputSignal   !Initialization of previous Input
+
+		ENDIF
+
+		K = 2.0 / DT
+
+        SecLPFilter        = 1/(4+4*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
+            ( (8-2*DT**2*CornerFreq**2)*OutputSignalLast1 + (-4+4*DT*Damp*CornerFreq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
+            (DT**2*CornerFreq**2)*InputSignal + (2*DT**2*CornerFreq**2)*InputSignalLast1 + (DT**2*CornerFreq**2)*InputSignalLast2 )
+
+		InputSignalLast2    = InputSignalLast1
+		InputSignalLast1    = InputSignal			!Save input signal for next time step
+		OutputSignalLast2   = OutputSignalLast1		!Save input signal for next time step
+        OutputSignalLast1   = SecLPFilter
+
+	END FUNCTION SecLPFilter
+
+
 END SUBROUTINE DISCON
 
 
 !=======================================================================
-
-SUBROUTINE NotchFilter
-! Discrete time inverted Notch Filter
-
-    IMPLICIT NONE
-
-    OutputSignal    = 1/(4+2*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
-        ( (8-2*DT**2*ConerFreq**2)*OutputSignalLast1 + (-4+2*DT*Damp*CornerFeq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
-        (2*DT*Damp*CornerFreq*K)*InputSignal + (-2*DT*Damp*CornerFreq*K)*InputSignalLast2 )
-
-
-END SUBROUTINE
 
 !=======================================================================
 
