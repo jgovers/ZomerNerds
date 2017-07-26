@@ -324,7 +324,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
     ! Filter the HSS (generator) speed measurement:
     ! Apply Low-Pass Filter
-    CALL LPFilter(iStatus,GenSpeed,DT,CornerFreq,GenSpeedF)
+    GenSpeedF = LPFilter(GenSpeed,DT,CornerFreq,iStatus)
 
 !=======================================================================
 
@@ -533,57 +533,53 @@ CONTAINS	!Lists the functions and subroutines used in DISCON
 
 	END FUNCTION saturate
 
+	REAL FUNCTION LPFilter(InputSignal,DT,CornerFreq,iStatus)
+	! Discrete time Low-Pass Filter
+
+		IMPLICIT NONE
+
+		REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+		INTEGER, INTENT(IN)		:: iStatus
+		REAL(4), SAVE           :: InputSignalLast, OutputSignalLast
+
+		IF ( iStatus == 0 )  THEN           ! .TRUE. if we're on the first call to the DLL
+		   OutputSignalLast    = InputSignal    ! Initialization of Output
+		   InputSignalLast = InputSignal    ! Initialization of previous Input
+		ENDIF
+
+		LPFilter     = (DT*CornerFreq*InputSignal + DT*CornerFreq*InputSignalLast - (DT*CornerFreq-2.0)*OutputSignalLast)/(DT*CornerFreq+2.0)	!Filter output
+
+		InputSignalLast   = InputSignal		!Save input signal for next time step
+		OutputSignalLast  = LPFilter		!Save input signal for next time step
+
+	END FUNCTION LPFilter
+
+	REAL FUNCTION HPFilter(InputSignal,DT,CornerFreq,iStatus)
+	! Discrete time High-Pass Filter
+
+		IMPLICIT NONE
+
+		REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+		INTEGER, INTENT(IN)		:: iStatus
+		REAL(4), SAVE           :: InputSignalLast, OutputSignalLast
+		REAL(4)                 :: K
+
+		IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
+			OutputSignalLast    = InputSignal	! Initialization of Output
+			InputSignalLast = InputSignal    	! Initialization of previous Input
+		ENDIF
+
+		K = 2.0 / DT
+
+		HPFilter = K/(CornerFreq + K)*InputSignal - K/(CornerFreq + K)*InputSignalLast - (CornerFreq - K)/(CornerFreq + K)*OutputSignalLast	!Filter output
+
+		InputSignalLast   = InputSignal			!Save input signal for next time step
+		OutputSignalLast  = HPFilter			!Save input signal for next time step
+
+	END FUNCTION HPFilter
+
 END SUBROUTINE DISCON
 
-!=======================================================================
-!=======================================================================
-
-SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
-! Discrete time Low-Pass Filter
-
-    IMPLICIT NONE
-
-	INTEGER, INTENT(IN)		:: iStatus
-    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-    REAL(4), INTENT(INOUT)  :: OutputSignal
-    REAL(4), SAVE           :: InputSignalLast
-
-    IF ( iStatus == 0 )  THEN           ! .TRUE. if we're on the first call to the DLL
-       OutputSignal    = InputSignal    ! Initialization of Output
-       InputSignalLast = InputSignal    ! Initialization of previous Input
-    ENDIF
-
-    OutputSignal     = (DT*CornerFreq*InputSignal + DT*CornerFreq*InputSignalLast - (DT*CornerFreq-2.0)*OutputSignal)/(DT*CornerFreq+2.0);
-
-    InputSignalLast   = InputSignal     !Save input signal for next time step
-
-END SUBROUTINE LPFilter
-
-!=======================================================================
-
-SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
-! Discrete time High-Pass Filter
-
-    IMPLICIT NONE
-
-	INTEGER, INTENT(IN)		:: iStatus
-    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-    REAL(4), INTENT(INOUT)  :: OutputSignal
-    REAL(4), SAVE           :: InputSignalLast
-    REAL(4)                 :: K
-
-    IF ( iStatus == 0 )  THEN            ! .TRUE. if we're on the first call to the DLL
-        OutputSignal    = InputSignal    ! Initialization of Output
-        InputSignalLast = InputSignal    ! Initialization of previous Input
-    ENDIF
-
-    K = 2.0 / DT
-
-    OutputSignal = K/(CornerFreq + K)*InputSignal - K/(CornerFreq + K)*InputSignalLast - (CornerFreq - K)/(CornerFreq + K)*OutputSignal
-
-    InputSignalLast = InputSignal       !Save input signal for next time step
-
-END SUBROUTINE HPFilter
 
 !=======================================================================
 
