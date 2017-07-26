@@ -60,7 +60,7 @@ REAL(4), PARAMETER           :: PC_KP         =       0.01882681                
 REAL(4), PARAMETER           :: PC_MaxPit     =       1.570796                  ! Maximum pitch setting in pitch controller, rad.
 REAL(4), PARAMETER           :: PC_MaxRat     =       0.1396263                 ! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
 REAL(4), PARAMETER           :: PC_MinPit     =       0.0                       ! Minimum pitch setting in pitch controller, rad.
-REAL(4), PARAMETER           :: PC_RefSpd     =		  122.9096                  ! Desired (reference) HSS speed for pitch controller, rad/s.
+REAL(4), PARAMETER           :: PC_RefSpd     =     122.9096                    ! Desired (reference) HSS speed for pitch controller, rad/s.
 REAL(4), SAVE                :: PitCom    (3)                                   ! Commanded pitch of each blade the last time the controller was called, rad.
 REAL(4)                      :: PitComI                                         ! Integral term of command pitch, rad.
 REAL(4)                      :: PitComP                                         ! Proportional term of command pitch, rad.
@@ -329,8 +329,53 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 !=======================================================================
 
-	! Variable-speed torque control
-	CALL VSTControl()
+   ! Variable-speed torque control:
+
+   ! Compute the elapsed time since the last call to the controller:
+
+   ElapTime = Time - LastTimeVS
+
+     ! Compute the generator torque, which depends on which region we are in:
+
+      IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
+         GenTrq = VS_RtPwr/GenSpeedF
+      ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
+         GenTrq = 0.0
+      ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
+         GenTrq = VS_Slope15*( GenSpeedF - VS_CtInSp )
+      ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
+         GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
+      ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
+         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
+      ENDIF
+
+
+   ! Saturate the commanded torque using the maximum torque limit:
+
+      GenTrq  = MIN( GenTrq                    , VS_MaxTq  )   ! Saturate the command using the maximum torque limit
+
+
+   ! Saturate the commanded torque using the torque rate limit:
+
+      IF ( iStatus == 0 )  LastGenTrq = GenTrq                 ! Initialize the value of LastGenTrq on the first pass only
+      TrqRate = ( GenTrq - LastGenTrq )/ElapTime               ! Torque rate (unsaturated)
+      TrqRate = MIN( MAX( TrqRate, -VS_MaxRat ), VS_MaxRat )   ! Saturate the torque rate using its maximum absolute value
+      GenTrq  = LastGenTrq + TrqRate*ElapTime                  ! Saturate the command using the torque rate limit
+
+
+   ! Reset the values of LastTimeVS and LastGenTrq to the current values:
+
+      LastTimeVS = Time
+      LastGenTrq = GenTrq
+
+
+   ! Set the generator contactor status, avrSWAP(35), to main (high speed)
+   !   variable-speed generator, the torque override to yes, and command the
+   !   generator torque (See Appendix A of Bladed User's Guide):
+
+   avrSWAP(35) = 1.0          ! Generator contactor status: 1=main (high speed) variable-speed generator
+   avrSWAP(56) = 0.0          ! Torque override: 0=yes
+   avrSWAP(47) = LastGenTrq   ! Demanded generator torque
 
 !=======================================================================
 
@@ -506,67 +551,3 @@ END SUBROUTINE LPFilter
     !GenSpeedF2 = TK/(CornerFreq + TK)*GenSpeed - TK/(CornerFreq + TK)*GenSpeedLast - (CornerFreq - TK)/(CornerFreq + TK)*GenSpeedF2
     !GenSpeedLast = GenSpeed
 
-SUBROUTINE VSTControl(ElapTime, Time, LastTimeVS, GenSpeedF )
-! TODO (Jochem#1#07/25/17): Check each variable where it is used and stuff
-! Variable-speed torque control
-
-	IMPLICIT NONE
-	! Initialize variables
-	REAL(4), INTENT(IN)				:: Time
-	REAL(4), INTENT(INOUT)			:: ElapTime, LastTimeVS
-	REAL(4), INTENT(IN)				:: GenSpeedF
-	REAL(4), INTENT(IN)				:: VS_RtGnSp, VS_Rgn3MP, VS_RtPwr, VS_CtInSp, VS_Rgn2Sp, VS_Slope15, VS_TrGnSp, VS_Rgn2K, VS_Slope25, VS_SySp, VS_MaxTq, LastGenTrq, VS_MaxRat
-	REAL(4), INTENT(IN)				:: PitCom
-	REAL(4), INTENT(INOUT)			:: LastGenTrq
-	REAL(4), INTENT(OUT)			:: GenTrq, TrqRate
-	REAL(C_FLOAT), INTENT(INOUT)	:: avrSWAP   (*)
-
-
-
-	! Compute the elapsed time since the last call to the controller:
-
-	ElapTime = Time - LastTimeVS
-
-		! Compute the generator torque, which depends on which region we are in:
-
-	IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
-         GenTrq = VS_RtPwr/GenSpeedF
-	ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
-         GenTrq = 0.0
-	ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
-         GenTrq = VS_Slope15*( GenSpeedF - VS_CtInSp )
-	ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
-         GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
-	ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
-         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
-	ENDIF
-
-
-   ! Saturate the commanded torque using the maximum torque limit:
-
-      GenTrq  = MIN( GenTrq                    , VS_MaxTq  )   ! Saturate the command using the maximum torque limit
-
-
-   ! Saturate the commanded torque using the torque rate limit:
-
-      IF ( iStatus == 0 )  LastGenTrq = GenTrq                 ! Initialize the value of LastGenTrq on the first pass only
-      TrqRate = ( GenTrq - LastGenTrq )/ElapTime               ! Torque rate (unsaturated)
-      TrqRate = MIN( MAX( TrqRate, -VS_MaxRat ), VS_MaxRat )   ! Saturate the torque rate using its maximum absolute value
-      GenTrq  = LastGenTrq + TrqRate*ElapTime                  ! Saturate the command using the torque rate limit
-
-
-   ! Reset the values of LastTimeVS and LastGenTrq to the current values:
-
-      LastTimeVS = Time
-      LastGenTrq = GenTrq
-
-
-   ! Set the generator contactor status, avrSWAP(35), to main (high speed)
-   !   variable-speed generator, the torque override to yes, and command the
-   !   generator torque (See Appendix A of Bladed User's Guide):
-
-   avrSWAP(35) = 1.0          ! Generator contactor status: 1=main (high speed) variable-speed generator
-   avrSWAP(56) = 0.0          ! Torque override: 0=yes
-   avrSWAP(47) = LastGenTrq   ! Demanded generator torque
-
-END SUBROUTINE VSTControl
