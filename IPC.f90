@@ -2,11 +2,12 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
 ! The individual pitch control module
 	USE Filters
     IMPLICIT NONE
+
     !Inputs
 	REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
 	REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
 	REAL(4), INTENT(IN)		:: phi_1p, phi_2p					!phase offset added to the azimuth angle TODO: better description
-	REAL(4), INTENT(IN)     :: gain_1p, gain_2p                 !gain
+	REAL(4), INTENT(IN)     :: gain_1p, gain_2p                 !gain for the IPC block
 	REAL(4), INTENT(IN)     :: DT                               !the time step
 	INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 
@@ -17,6 +18,9 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
     REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
     REAL(4)					:: pAngle1_1p, pAngle2_1p, pAngle3_1p	!individual pitch angles for 1p IPC
     REAL(4)					:: pAngle1_2p, pAngle2_2p, pAngle3_2p	!individual pitch angles for 2p IPC
+
+    !Filter rootMOOPs
+
 
 
 
