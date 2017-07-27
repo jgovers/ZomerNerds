@@ -522,9 +522,4 @@ avcMSG = TRANSFER( TRIM(ErrMsg)//C_NULL_CHAR, avcMSG, SIZE(avcMSG) )
 
 RETURN
 
-CONTAINS	!Lists the functions and subroutines used in DISCON
-
-
-
-
 END SUBROUTINE DISCON

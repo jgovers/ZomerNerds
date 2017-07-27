@@ -4,7 +4,7 @@ MODULE FunctionToolbox
     IMPLICIT NONE
 
     CONTAINS
-
+!=======================================================================
     	REAL FUNCTION saturate(inputValue,minValue,maxValue)
             ! Saturates inputValue. Makes sure it is not smaller than minValue and not larger than maxValue
 
@@ -15,5 +15,6 @@ MODULE FunctionToolbox
             saturate = MIN(MAX(inputValue,minValue),maxValue)
 
         END FUNCTION saturate
+!=======================================================================
 
 END MODULE FunctionToolbox
