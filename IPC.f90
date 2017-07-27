@@ -18,13 +18,21 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
     REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
     REAL(4)					:: pAngle1_1p, pAngle2_1p, pAngle3_1p	!individual pitch angles for 1p IPC
     REAL(4)					:: pAngle1_2p, pAngle2_2p, pAngle3_2p	!individual pitch angles for 2p IPC
+    REAL(4), PARAMETER      :: zeta_1p, zeta_2p                     !damping factor for notch filter
+    REAL(4), PARAMETER      :: omega_1p, omega_2p                   !corner frequency for notch filter
 
     !Filter rootMOOPs
+    rootMOOP1_1p = NotchFilter(rootMOOP1,DT,zeta_1p,omega_1p,gain_1p,iStatus)
+    rootMOOP2_1p = NotchFilter(rootMOOP2,DT,zeta_1p,omega_1p,gain_1p,iStatus)
+    rootMOOP3_1p = NotchFilter(rootMOOP3,DT,zeta_1p,omega_1p,gain_1p,iStatus)
 
+    rootMOOP1_2p = NotchFilter(rootMOOP1,DT,zeta_2p,omega_2p,gain_2p,iStatus)
+    rootMOOP2_2p = NotchFilter(rootMOOP2,DT,zeta_2p,omega_2p,gain_2p,iStatus)
+    rootMOOP3_2p = NotchFilter(rootMOOP3,DT,zeta_2p,omega_2p,gain_2p,iStatus)
 
 CONTAINS
-    SUBROUTINE IPC_core()
-    ! rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi1, gain, pAngle1, pAngle2, pAngle3
+    SUBROUTINE IPC_core(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi1, gain, pAngle1, pAngle2, pAngle3)
+    !
     ! Does the core IPC work
         IMPLICIT NONE
 
