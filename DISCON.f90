@@ -1,5 +1,120 @@
 !=======================================================================
 !SUBROUTINE DISCON ( avrSWAP, from_SC, to_SC, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, NAME='DISCON')
+
+MODULE Filters
+    CONTAINS
+    	REAL FUNCTION LPFilter(InputSignal,DT,CornerFreq,iStatus)
+            ! Discrete time Low-Pass Filter
+
+            IMPLICIT NONE
+
+            REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+            INTEGER, INTENT(IN)		:: iStatus
+            REAL(4), SAVE           :: InputSignalLast, OutputSignalLast
+
+            IF ( iStatus == 0 )  THEN           ! .TRUE. if we're on the first call to the DLL
+               OutputSignalLast    = InputSignal    ! Initialization of Output
+               InputSignalLast = InputSignal    ! Initialization of previous Input
+            ENDIF
+
+            LPFilter     = (DT*CornerFreq*InputSignal + DT*CornerFreq*InputSignalLast - (DT*CornerFreq-2.0)*OutputSignalLast)/(DT*CornerFreq+2.0)	!Filter output
+
+            InputSignalLast   = InputSignal		!Save input signal for next time step
+            OutputSignalLast  = LPFilter		!Save input signal for next time step
+
+        END FUNCTION LPFilter
+
+        REAL FUNCTION HPFilter(InputSignal,DT,CornerFreq,iStatus)
+        ! Discrete time High-Pass Filter
+
+            IMPLICIT NONE
+
+            REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+            INTEGER, INTENT(IN)		:: iStatus
+            REAL(4), SAVE           :: InputSignalLast, OutputSignalLast
+            REAL(4)                 :: K
+
+            IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
+                OutputSignalLast    = InputSignal	! Initialization of Output
+                InputSignalLast = InputSignal    	! Initialization of previous Input
+            ENDIF
+
+            K = 2.0 / DT
+
+            HPFilter = K/(CornerFreq + K)*InputSignal - K/(CornerFreq + K)*InputSignalLast - (CornerFreq - K)/(CornerFreq + K)*OutputSignalLast	!Filter output
+
+            InputSignalLast   = InputSignal			!Save input signal for next time step
+            OutputSignalLast  = HPFilter			!Save input signal for next time step
+
+        END FUNCTION HPFilter
+
+        REAL FUNCTION NotchFilter(InputSignal,DT,Damp,CornerFreq,K,iStatus)
+        ! Discrete time inverted Notch Filter
+
+            IMPLICIT NONE
+
+            REAL(4), INTENT(IN)     :: InputSignal,DT,Damp,CornerFreq,K    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+            INTEGER, INTENT(IN)		:: iStatus
+            REAL(4), SAVE           :: InputSignalLast1,InputSignalLast2,OutputSignalLast1,OutputSignalLast2
+
+            IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
+                OutputSignalLast1   = InputSignal	! Initialization of Output
+                OutputSignalLast2   = InputSignal
+                InputSignalLast1    = InputSignal
+                InputSignalLast2    = InputSignal   !Initialization of previous Input
+
+            ENDIF
+
+            K = 2.0 / DT
+
+            NotchFilter        = 1/(4+2*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
+                ( (8-2*DT**2*CornerFreq**2)*OutputSignalLast1 + (-4+2*DT*Damp*CornerFreq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
+                (2*DT*Damp*CornerFreq*K)*InputSignal + (-2*DT*Damp*CornerFreq*K)*InputSignalLast2 )
+
+            InputSignalLast2    = InputSignalLast1
+            InputSignalLast1    = InputSignal			!Save input signal for next time step
+            OutputSignalLast2   = OutputSignalLast1		!Save input signal for next time step
+            OutputSignalLast1   = NotchFilter
+
+        END FUNCTION HPFilter
+
+        REAL FUNCTION SecLPFilter(InputSignal,DT,Damp,CornerFreq,K,iStatus)
+        ! Discrete time second order Low-Pass Filter
+
+            IMPLICIT NONE
+
+            REAL(4), INTENT(IN)     :: InputSignal,DT,Damp,CornerFreq,K    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
+            INTEGER, INTENT(IN)		:: iStatus
+            REAL(4), SAVE           :: InputSignalLast1,InputSignalLast2,OutputSignalLast1,OutputSignalLast2
+
+            IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
+                OutputSignalLast1   = InputSignal	! Initialization of Output
+                OutputSignalLast2   = InputSignal
+                InputSignalLast1    = InputSignal
+                InputSignalLast2    = InputSignal   !Initialization of previous Input
+
+            ENDIF
+
+            K = 2.0 / DT
+
+            SecLPFilter        = 1/(4+4*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
+                ( (8-2*DT**2*CornerFreq**2)*OutputSignalLast1 + (-4+4*DT*Damp*CornerFreq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
+                (DT**2*CornerFreq**2)*InputSignal + (2*DT**2*CornerFreq**2)*InputSignalLast1 + (DT**2*CornerFreq**2)*InputSignalLast2 )
+
+            InputSignalLast2    = InputSignalLast1
+            InputSignalLast1    = InputSignal			!Save input signal for next time step
+            OutputSignalLast2   = OutputSignalLast1		!Save input signal for next time step
+            OutputSignalLast1   = SecLPFilter
+
+        END FUNCTION SecLPFilter
+
+END MODULE Filters
+
+
+
+
+
+
 SUBROUTINE DISCON ( avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, NAME='DISCON')
 !DEC$ ATTRIBUTES DLLEXPORT :: DISCON
 
@@ -16,7 +131,8 @@ SUBROUTINE DISCON ( avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, N
    ! Note that gfortran v5.x on Mac produces compiler errors with the DLLEXPORT attribute,
    ! so I've added the compiler directive IMPLICIT_DLLEXPORT.
 
-USE, INTRINSIC :: ISO_C_Binding
+USE, INTRINSIC  :: ISO_C_Binding
+USE             :: Filters
 
 IMPLICIT                        NONE
 #ifndef IMPLICIT_DLLEXPORT
@@ -324,7 +440,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
     ! Filter the HSS (generator) speed measurement:
     ! Apply Low-Pass Filter
-    CALL LPFilter(iStatus,GenSpeed,DT,CornerFreq,GenSpeedF)
+    GenSpeedF = LPFilter(GenSpeed,DT,CornerFreq,iStatus)
 
 !=======================================================================
 
@@ -522,6 +638,9 @@ avcMSG = TRANSFER( TRIM(ErrMsg)//C_NULL_CHAR, avcMSG, SIZE(avcMSG) )
 
 RETURN
 
+!=======================================================================
+!=======================================================================
+
 CONTAINS	!Lists the functions and subroutines used in DISCON
 
 	REAL FUNCTION saturate(inputValue, minValue, maxValue)
@@ -536,57 +655,51 @@ CONTAINS	!Lists the functions and subroutines used in DISCON
 END SUBROUTINE DISCON
 
 !=======================================================================
+!SUBROUTINE IPC
+!! Individual Pitch Controller
+!
+!    IMPLICIT NONE
+!
+!
+!
+!END SUBROUTINE
 !=======================================================================
 
-SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
-! Discrete time Low-Pass Filter
+SUBROUTINE ColmanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr)
+!The Colman or d-q axis transformation transforms the root out of plane bending moments of each turbine blade
+!to a direct axis and a quadrature axis
 
-    IMPLICIT NONE
+	IMPLICIT NONE
 
-	INTEGER, INTENT(IN)		:: iStatus
-    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-    REAL(4), INTENT(INOUT)  :: OutputSignal
-    REAL(4), SAVE           :: InputSignalLast
+	REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
+	REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
+	REAL(4), INTENT(OUT)	:: axisDirect, axisQuadr			!direct axis and quadrature axis outputted by this transform
+	REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
+	REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
+	REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
 
-    IF ( iStatus == 0 )  THEN           ! .TRUE. if we're on the first call to the DLL
-       OutputSignal    = InputSignal    ! Initialization of Output
-       InputSignalLast = InputSignal    ! Initialization of previous Input
-    ENDIF
+	axisDirect	= 2/3 * (cos(aziAngle)*rootMOOP1 + cos(aziAngle+phi2)*rootMOOP2 + cos(aziAngle+phi3)*rootMOOP3)
+	axisQuadr	= 2/3 * (sin(aziAngle)*rootMOOP1 + sin(aziAngle+phi2)*rootMOOP2 + sin(aziAngle+phi3)*rootMOOP3)
 
-    OutputSignal     = (DT*CornerFreq*InputSignal + DT*CornerFreq*InputSignalLast - (DT*CornerFreq-2.0)*OutputSignal)/(DT*CornerFreq+2.0);
+END SUBROUTINE ColmanTransform
 
-    InputSignalLast   = InputSignal     !Save input signal for next time step
+SUBROUTINE ColmanTransformInverse(axisDirect, axisQuadr, aziAngle, delta1pAngle, rootMOOP1, rootMOOP2, rootMOOP3)
+!The inverse Colman or d-q axis transformation transforms the direct axis and quadrature axis
+!back to root out of plane bending moments of each turbine blade
 
-END SUBROUTINE LPFilter
+	IMPLICIT NONE
 
-!=======================================================================
+	REAL(4), INTENT(IN)		:: axisDirect, axisQuadr			!direct axis and quadrature axis
+	REAL(4), INTENT(IN)		:: aziAngle 						!rotor azimuth angle
+	REAL(4), INTENT(IN)		:: delta1pAngle						!phase shift added to the azimuth angle TODO: better description
+	REAL(4), INTENT(OUT)	:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
 
-SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
-! Discrete time High-Pass Filter
+	REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
+	REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
+	REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
 
-    IMPLICIT NONE
+	rootMOOP1 = cos(aziAngle+delta1pAngle)*axisDirect + sin(aziAngle+delta1pAngle)*axisQuadr
+	rootMOOP2 = cos(aziAngle+delta1pAngle+phi2)*axisDirect + sin(aziAngle+delta1pAngle+phi2)*axisQuadr
+	rootMOOP3 = cos(aziAngle+delta1pAngle+phi3)*axisDirect + sin(aziAngle+delta1pAngle+phi3)*axisQuadr
 
-	INTEGER, INTENT(IN)		:: iStatus
-    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-    REAL(4), INTENT(INOUT)  :: OutputSignal
-    REAL(4), SAVE           :: InputSignalLast
-    REAL(4)                 :: K
-
-    IF ( iStatus == 0 )  THEN            ! .TRUE. if we're on the first call to the DLL
-        OutputSignal    = InputSignal    ! Initialization of Output
-        InputSignalLast = InputSignal    ! Initialization of previous Input
-    ENDIF
-
-    K = 2.0 / DT
-
-    OutputSignal = K/(CornerFreq + K)*InputSignal - K/(CornerFreq + K)*InputSignalLast - (CornerFreq - K)/(CornerFreq + K)*OutputSignal
-
-    InputSignalLast = InputSignal       !Save input signal for next time step
-
-END SUBROUTINE HPFilter
-
-!=======================================================================
-
-
-
-!=======================================================================
+END SUBROUTINE ColmanTransformInverse
