@@ -22,11 +22,6 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
     !Filter rootMOOPs
 
 
-
-
-
-
-
 CONTAINS
     SUBROUTINE IPC_core(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi1, gain, pAngle1, pAngle2, pAngle3)
     ! Does the core IPC work
@@ -101,4 +96,5 @@ CONTAINS
         rootMOOP3 = cos(aziAngle+phi1+phi3)*axisDirect + sin(aziAngle+phi1+phi3)*axisQuadr
 
     END SUBROUTINE ColemanTransformInverse
+
 END SUBROUTINE
