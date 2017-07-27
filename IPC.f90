@@ -7,7 +7,7 @@ SUBROUTINE IPC
 
 
 CONTAINS
-    SUBROUTINE IPC_core(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, deltaPAngle, pAngle1, pAngle2, pAngle3)
+    SUBROUTINE IPC_core(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, deltaPAngle, gain, pAngle1, pAngle2, pAngle3)
     ! Core IPC code
         IMPLICIT NONE
 
@@ -16,18 +16,30 @@ CONTAINS
         REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
         REAL(4), INTENT(IN)		:: deltaPAngle						!phase offset added to the azimuth angle TODO: better description
         REAL(4), INTENT(IN)     :: gain                             !a gain
+        REAL(4), INTENT(IN)     :: DT                               !the time step
+        INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 
         !Outputs
         REAL(4), INTENT(OUT)    :: pAngle1, pAngle2, pAngle3        !pitch angle of each rotor blade
 
         !Internal variables
         REAL(4)             	:: axisDirect, axisQuadr			!direct axis and quadrature axis outputted by Coleman transform
+        REAL(4), SAVE           :: IntAxisDirect, IntAxisQuadr      !integral of the direct axis and quadrature axis
+
+        !Initialization
+        IF(iStatus==0)  THEN
+            IntAxisDirect = 0
+            IntAxisQuadr = 0
+        END IF
 
         !Body
-        CALL ColmanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr)
+        CALL ColmanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr)	!pass rootMOOPs through the Coleman transform
 
 
+        IntAxisDirect	= IntAxisDirect + DT * gain * axisDirect		!multiply with gain and take the integral
+        IntAxisQuadr	= IntAxisQuadr + DT * gain * axisQuadr			!multiply with gain and take the integral
 
+        SUBROUTINE ColmanTransformInverse(axisDirect, axisQuadr, aziAngle, deltaPAngle, pAngle1, pAngle2, pAngle3)
 
     END SUBROUTINE IPC_core
 
