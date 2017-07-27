@@ -1,4 +1,4 @@
-MODULE IPC
+SUBROUTINE IPC
 ! The individual pitch control module
     IMPLICIT NONE
 
