@@ -17,18 +17,18 @@ MODULE FunctionToolbox
         END FUNCTION saturate
 !=======================================================================
 
-        REAL FUNCTION PI(input,DT,P,iStatus)
+        REAL FUNCTION PI(input,Kp,Ki,DT,iStatus)
             ! PI controller
             IMPLICIT NONE
 
             REAL(4), INTENT(IN)		::  input
-            REAL(4), INTENT(IN)		::  DT
-            REAL(4), INTENT(IN)		::  P
-            REAL(4), SAVE			::	integral
+            REAL(4), INTENT(IN)		::  DT          ! Time step [s]
+            REAL(4), INTENT(IN)		::  Kp, Ki      ! Proportional and integral gain
+            REAL(4), SAVE			::	integral    ! Keeps track of the integral
 
             IF ( iStatus == 0 ) integral = 0		! Instantiate the integral on the first call
-            integral = integral + input*DT			! Integrate
-            PI = P*(input*integral)					! Calculate output
+            integral = integral + Ki*input*DT		! Integrate
+            PI = Kp*input + integral 			    ! Calculate output
 
         END FUNCTION PI
 

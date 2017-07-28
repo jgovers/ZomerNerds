@@ -71,6 +71,8 @@ REAL(4)                      :: SpdErr                                          
 REAL(4)                      :: Time                                            ! Current simulation time, sec.
 REAL(4)                      :: TrqRate                                         ! Torque rate based on the current and last torque commands, N-m/s.
 REAL(4), PARAMETER           :: VS_CtInSp     =      70.16224                   ! Transitional generator speed (HSS side) between regions 1 and 1 1/2, rad/s.
+REAL(4), PARAMETER           :: VS_Ki		  =	  -2100.0						! Integral gain
+REAL(4), PARAMETER           :: VS_Kp		  =	  -4200.0						! Proportional gain
 REAL(4), PARAMETER           :: VS_MaxRat     =   15000.0                       ! Maximum torque rate (in absolute value) in torque controller, N-m/s.
 REAL(4), PARAMETER           :: VS_MaxTq      =   47402.91                      ! Maximum generator torque in Region 3 (HSS side), N-m. -- chosen to be 10% above VS_RtTq = 43.09355kNm
 REAL(4), PARAMETER           :: VS_Rgn2K      =       2.332287                  ! Generator torque constant in Region 2 (HSS side), N-m/(rad/s)^2.
@@ -344,7 +346,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
          GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
       ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
-         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
+         GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus)
       ENDIF
 
 
