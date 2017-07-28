@@ -7,7 +7,7 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
 	REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
 	REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
 	REAL(4), INTENT(IN)		:: phi_1p, phi_2p					!phase offset added to the azimuth angle TODO: better description
-	REAL(4), INTENT(IN)     :: gain_1p, gain_2p                 !gain for the IPC block
+	REAL(4), INTENT(IN)     :: gain_IPC_1p, gain_IPC_2p                 !gain for the IPC block
 	REAL(4), INTENT(IN)     :: DT                               !the time step
 	INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 
@@ -20,6 +20,9 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
     REAL(4)					:: pAngle1_2p, pAngle2_2p, pAngle3_2p	!individual pitch angles for 2p IPC
     REAL(4), PARAMETER      :: zeta_1p, zeta_2p                     !damping factor for notch filter
     REAL(4), PARAMETER      :: omega_1p, omega_2p                   !corner frequency for notch filter
+    REAL(4), PARAMETER      :: gain_Notch_1p, gain_Notch_2p         !
+
+    REAL(4)                 :: rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, rootMOOP1_2p, rootMOOP2_2p, rootMOOP3_2p
 
     !Filter rootMOOPs
     rootMOOP1_1p = NotchFilter(rootMOOP1,DT,zeta_1p,omega_1p,gain_1p,iStatus)
@@ -29,6 +32,8 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
     rootMOOP1_2p = NotchFilter(rootMOOP1,DT,zeta_2p,omega_2p,gain_2p,iStatus)
     rootMOOP2_2p = NotchFilter(rootMOOP2,DT,zeta_2p,omega_2p,gain_2p,iStatus)
     rootMOOP3_2p = NotchFilter(rootMOOP3,DT,zeta_2p,omega_2p,gain_2p,iStatus)
+
+    CALL IPC_core(rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, aziAngle, DT, iStatus, phil,)
 
 CONTAINS
     SUBROUTINE IPC_core(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi1, gain, pAngle1, pAngle2, pAngle3)
