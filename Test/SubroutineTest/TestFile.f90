@@ -1,5 +1,5 @@
 PROGRAM TestFile
-
+    USE TestModule
     IMPLICIT NONE
 
     REAL(4)     :: a,b,output,global

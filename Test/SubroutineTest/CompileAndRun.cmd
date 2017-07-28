@@ -6,7 +6,7 @@ SET executable=TestCode
 DEL %executable%.exe
 
 :: Compile
-gfortran *.f90 -o %executable%
+gfortran TestModule.f90 TestFile.f90 -o %executable%
 
 :: Run
 TestCode
