@@ -86,7 +86,7 @@ CONTAINS
 
     END SUBROUTINE IPC_core
 
-    SUBROUTINE ColemanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr)
+    SUBROUTINE ColemanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, PI, axisDirect, axisQuadr)
     !The Coleman or d-q axis transformation transforms the root out of plane bending moments of each turbine blade
     !to a direct axis and a quadrature axis
 
