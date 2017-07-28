@@ -1,69 +1,59 @@
-SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, phi_2p, gain_1p, gain2_p, pAngle1, pAngle2, pAngle3)
+SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, PitComIPC, PitComIPCF, rootMOOPF)
 ! The individual pitch control module
 	USE Filters
+
     IMPLICIT NONE
 
     !Inputs
-	REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
-	REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
-	REAL(4), INTENT(IN)		:: phi_1p, phi_2p					!phase offset added to the azimuth angle TODO: better description
-	REAL(4), INTENT(IN)     :: gain_IPC_1p, gain_IPC_2p                 !gain for the IPC block
-	REAL(4), INTENT(IN)     :: DT                               !the time step
+	REAL(4), INTENT(IN)		:: aziAngle							! Rotor azimuth angle
+	REAL(4), INTENT(IN)     :: DT                               ! Time step
+	REAL(4), INTENT(IN)     :: KInter                           ! Gain for the integrator
+	REAL(4), INTENT(IN)     :: KNotch                           ! Gain for the notch filter
+	REAL(4), INTENT(IN)		:: omegaLP          				!phase offset added to the azimuth angle TODO: better description
+	REAL(4), INTENT(IN)		:: omegaNotch          				!phase offset added to the azimuth angle TODO: better description
+	REAL(4), INTENT(IN)		:: phi          					!phase offset added to the azimuth angle TODO: better description
+	REAL(4), INTENT(IN)		:: rootMOOP (3)                 	!root out of plane bending moments of each blade
+	REAL(4), INTENT(IN)		:: zetaLP       					!
+    REAL(4), INTENT(IN)		:: zetaNotch       					!
+
 	INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 
 	!Outputs
-	REAL(4), INTENT(OUT)    :: pAngle1, pAngle2, pAngle3        !pitch angle of each rotor blade
+	REAL(4), INTENT(OUT)    :: PitComIPC  (3)                      ! Pitch angle of each rotor blade
+    REAL(4), INTENT(OUT)    :: PitComIPCF (3)                      ! Filtered pitch angle of each rotor blade
+    REAL(4), INTENT(OUT)    :: rootMOOPF  (3)                       ! Filtered RootMoop
 
     !Local variables
     REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
-    REAL(4)					:: pAngle1_1p, pAngle2_1p, pAngle3_1p	!individual pitch angles for 1p IPC
-    REAL(4)					:: pAngle1_2p, pAngle2_2p, pAngle3_2p	!individual pitch angles for 2p IPC
-    REAL(4), PARAMETER      :: zeta_1p, zeta_2p                     !damping factor for notch filter
-    REAL(4), PARAMETER      :: omega_1p, omega_2p                   !corner frequency for notch filter
-    REAL(4), PARAMETER      :: gain_Notch_1p, gain_Notch_2p         !gain for the Notch filter
-
-    REAL(4)                 :: rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, rootMOOP1_2p, rootMOOP2_2p, rootMOOP3_2p
 
     !Filter rootMOOPs
-    rootMOOP1_1p = NotchFilter(rootMOOP1,DT,zeta_1p,omega_1p,gain_Notch_1p,iStatus)
-    rootMOOP2_1p = NotchFilter(rootMOOP2,DT,zeta_1p,omega_1p,gain_Notch_1p,iStatus)
-    rootMOOP3_1p = NotchFilter(rootMOOP3,DT,zeta_1p,omega_1p,gain_Notch_1p,iStatus)
+    rootMOOPF(1) = NotchFilter(rootMOOP(1), DT, KNotch, omegaNotch, zetaNotch, iStatus)
+    rootMOOPF(2) = NotchFilter(rootMOOP(2), DT, KNotch, omegaNotch, zetaNotch, iStatus)
+    rootMOOPF(3) = NotchFilter(rootMOOP(3), DT, KNotch, omegaNotch, zetaNotch, iStatus)
 
-    rootMOOP1_2p = NotchFilter(rootMOOP1,DT,zeta_2p,omega_2p,gain_Notch_2p,iStatus)
-    rootMOOP2_2p = NotchFilter(rootMOOP2,DT,zeta_2p,omega_2p,gain_Notch_2p,iStatus)
-    rootMOOP3_2p = NotchFilter(rootMOOP3,DT,zeta_2p,omega_2p,gain_Notch_2p,iStatus)
+    CALL IPC_core(rootMOOPF, aziAngle, DT, KInter, phi, iStatus, PitComIPC)
 
-    CALL IPC_core(rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, aziAngle, DT, iStatus, phil, gain_IPC_1p, pAngle1_1p, pAngle2_1p, pAngle3_1p)
-    CALL IPC_core(rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, aziAngle, DT, iStatus, phil, gain_IPC_1p, pAngle1_2p, pAngle2_2p, pAngle3_2p)
-
-    pAngle1_1p_F = SecLPFilter(pAngle1_1p,DT,zeta_L_1p,omega_L_1p,iStatus)
-    pAngle2_1p_F = SecLPFilter(pAngle2_1p,DT,zeta_L_1p,omega_L_1p,iStatus)
-    pAngle3_1p_F = SecLPFilter(pAngle3_1p,DT,zeta_L_1p,omega_L_1p,iStatus)
-
-    pAngle1_2p_F = SecLPFilter(pAngle1_2p,DT,zeta_L_2p,omega_L_2p,iStatus)
-    pAngle2_2p_F = SecLPFilter(pAngle2_2p,DT,zeta_L_2p,omega_L_2p,iStatus)
-    pAngle3_2p_F = SecLPFilter(pAngle3_2p,DT,zeta_L_2p,omega_L_2p,iStatus)
-
-    pAngle1 = pAngle1_1p_F + pAngle1_2p_F
-    pAngle2 = pAngle2_1p_F + pAngle2_2p_F
-    pAngle3 = pAngle3_1p_F + pAngle3_2p_F
+    PitComIPCF(1) = SecLPFilter(PitComIPC(1), DT, omegaLP, zetaLP, iStatus)
+    PitComIPCF(2) = SecLPFilter(PitComIPC(2), DT, omegaLP, zetaLP, iStatus)
+    PitComIPCF(3) = SecLPFilter(PitComIPC(3), DT, omegaLP, zetaLP, iStatus)
 
 CONTAINS
-    SUBROUTINE IPC_core(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi1, gain, pAngle1, pAngle2, pAngle3)
+    SUBROUTINE IPC_core(rootMOOP, aziAngle, DT, KInter, phi, iStatus, PitComIPC)
     ! Does the core IPC work
 
         IMPLICIT NONE
 
         !Inputs
-        REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
+        REAL(4), INTENT(IN)		:: rootMOOP (3)	                    !root out of plane bending moments of each blade
         REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
-        REAL(4), INTENT(IN)		:: phi1						        !phase offset added to the azimuth angle TODO: better description
-        REAL(4), INTENT(IN)     :: gain                             !a gain
         REAL(4), INTENT(IN)     :: DT                               !the time step
+        REAL(4), INTENT(IN)     :: KInter                           ! Integrator gain
+        REAL(4), INTENT(IN)		:: phi						        !phase offset added to the azimuth angle TODO: better description
+
         INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 
         !Outputs
-        REAL(4), INTENT(OUT)    :: pAngle1, pAngle2, pAngle3        !pitch angle of each rotor blade
+        REAL(4), INTENT(OUT)    :: PitComIPC(3)                       !pitch angle of each rotor blade
 
         !Local variables
         REAL(4)             	:: axisDirect, axisQuadr			!direct axis and quadrature axis outputted by Coleman transform
@@ -77,33 +67,35 @@ CONTAINS
         END IF
 
         !Body
-        CALL ColemanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr)	        !pass rootMOOPs through the Coleman transform
+        CALL ColemanTransform(rootMOOP, aziAngle, axisDirect, axisQuadr)	        !pass rootMOOPs through the Coleman transform
 
-        IntAxisDirect	= IntAxisDirect + DT * gain * axisDirect		!multiply with gain and take the integral
-        IntAxisQuadr	= IntAxisQuadr + DT * gain * axisQuadr			!multiply with gain and take the integral
+        IntAxisDirect	= IntAxisDirect + DT * KInter * axisDirect		!multiply with gain and take the integral
+        IntAxisQuadr	= IntAxisQuadr + DT * KInter * axisQuadr			!multiply with gain and take the integral
 
-        CALL ColemanTransformInverse(axisDirect, axisQuadr, aziAngle, phi1, pAngle1, pAngle2, pAngle3)	!pass signal through the inverse Coleman transform
+        CALL ColemanTransformInverse(axisDirect, axisQuadr, aziAngle, phi, PitComIPC)	!pass signal through the inverse Coleman transform
 
     END SUBROUTINE IPC_core
 
-    SUBROUTINE ColemanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, PI, axisDirect, axisQuadr)
+    SUBROUTINE ColemanTransform(rootMOOP, aziAngle, axisDirect, axisQuadr)
     !The Coleman or d-q axis transformation transforms the root out of plane bending moments of each turbine blade
     !to a direct axis and a quadrature axis
 
         IMPLICIT NONE
 
-        REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
+        REAL(4), INTENT(IN)		:: rootMOOP (3)	                    !root out of plane bending moments of each blade
         REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
+
         REAL(4), INTENT(OUT)	:: axisDirect, axisQuadr			!direct axis and quadrature axis outputted by this transform
+
         REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
         REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
 
-        axisDirect	= 2/3 * (cos(aziAngle)*rootMOOP1 + cos(aziAngle+phi2)*rootMOOP2 + cos(aziAngle+phi3)*rootMOOP3)
-        axisQuadr	= 2/3 * (sin(aziAngle)*rootMOOP1 + sin(aziAngle+phi2)*rootMOOP2 + sin(aziAngle+phi3)*rootMOOP3)
+        axisDirect	= 2/3 * (cos(aziAngle)*rootMOOP(1) + cos(aziAngle+phi2)*rootMOOP(2) + cos(aziAngle+phi3)*rootMOOP(3))
+        axisQuadr	= 2/3 * (sin(aziAngle)*rootMOOP(1) + sin(aziAngle+phi2)*rootMOOP(2) + sin(aziAngle+phi3)*rootMOOP(3))
 
     END SUBROUTINE ColemanTransform
 
-    SUBROUTINE ColemanTransformInverse(axisDirect, axisQuadr, aziAngle, phi1, PI, rootMOOP1, rootMOOP2, rootMOOP3)
+    SUBROUTINE ColemanTransformInverse(axisDirect, axisQuadr, aziAngle, phi, PitComIPC)
     !The inverse Coleman or d-q axis transformation transforms the direct axis and quadrature axis
     !back to root out of plane bending moments of each turbine blade
 
@@ -111,16 +103,15 @@ CONTAINS
 
         REAL(4), INTENT(IN)		:: axisDirect, axisQuadr			!direct axis and quadrature axis
         REAL(4), INTENT(IN)		:: aziAngle 						!rotor azimuth angle
-        REAL(4), INTENT(IN)		:: phi1								!phase shift added to the azimuth angle TODO: better description
-        REAL(4), INTENT(OUT)	:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
+        REAL(4), INTENT(IN)		:: phi								!phase shift added to the azimuth angle TODO: better description
+        REAL(4), INTENT(OUT)	:: PitComIPC (3)	                !root out of plane bending moments of each blade
 
-        REAL(4), PARAMETER      :: PI                               !
         REAL(4), PARAMETER		:: phi2 = 2/3*PI					! Phase difference to second blade
         REAL(4), PARAMETER		:: phi3 = 4/3*PI					! Phase difference to third blade
 
-        rootMOOP1 = cos(aziAngle+phi1)*axisDirect + sin(aziAngle+phi1)*axisQuadr
-        rootMOOP2 = cos(aziAngle+phi1+phi2)*axisDirect + sin(aziAngle+phi1+phi2)*axisQuadr
-        rootMOOP3 = cos(aziAngle+phi1+phi3)*axisDirect + sin(aziAngle+phi1+phi3)*axisQuadr
+        PitComIPC(1) = cos(aziAngle+phi)*axisDirect + sin(aziAngle+phi)*axisQuadr
+        PitComIPC(2) = cos(aziAngle+phi+phi2)*axisDirect + sin(aziAngle+phi+phi2)*axisQuadr
+        PitComIPC(3) = cos(aziAngle+phi+phi3)*axisDirect + sin(aziAngle+phi+phi3)*axisQuadr
 
     END SUBROUTINE ColemanTransformInverse
 
