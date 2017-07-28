@@ -57,6 +57,7 @@ REAL(4), PARAMETER           :: PC_KI         =       0.008068634               
 REAL(4), PARAMETER           :: PC_KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
 REAL(4), PARAMETER           :: PC_KP         =       0.01882681                ! Proportional gain for pitch controller at rated pitch (zero), sec.
 REAL(4), PARAMETER           :: PC_MaxPit     =       1.570796                  ! Maximum pitch setting in pitch controller, rad.
+REAL(4)						 :: PC_VarMaxPit                                    ! Maximum pitch setting in pitch controller, rad.
 REAL(4), PARAMETER           :: PC_MaxRat     =       0.1396263                 ! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
 REAL(4), PARAMETER           :: PC_MinPit     =       0.0                       ! Minimum pitch setting in pitch controller, rad.
 REAL(4), PARAMETER           :: PC_RefSpd     =     122.9096                    ! Desired (reference) HSS speed for pitch controller, rad/s.
@@ -79,6 +80,8 @@ REAL(4), PARAMETER           :: VS_Rgn2K      =       2.332287                  
 REAL(4), PARAMETER           :: VS_Rgn2Sp     =      91.21091                   ! Transitional generator speed (HSS side) between regions 1 1/2 and 2, rad/s.
 REAL(4), PARAMETER           :: VS_Rgn3MP     =       0.01745329                ! Minimum pitch angle at which the torque is computed as if we are in region 3 regardless of the generator speed, rad. -- chosen to be 1.0 degree above PC_MinPit
 REAL(4), PARAMETER           :: VS_RtGnSp     =     121.6805                    ! Rated generator speed (HSS side), rad/s. -- chosen to be 99% of PC_RefSpd
+REAL(4), PARAMETER           :: VS_RtTq       =     43773.63                    ! Rated generator torque (HSS side), Nm.
+REAL(4), PARAMETER           :: VS_RtTq99       =     43335.9
 REAL(4), PARAMETER           :: VS_RtPwr      = 5296610.0                       ! Rated generator generator power in Region 3, Watts. -- chosen to be 5MW divided by the electrical generator efficiency of 94.4%
 REAL(4), SAVE                :: VS_Slope15                                      ! Torque/speed slope of region 1 1/2 cut-in torque ramp , N-m/(rad/s).
 REAL(4), SAVE                :: VS_Slope25                                      ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
@@ -337,8 +340,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
      ! Compute the generator torque, which depends on which region we are in:
 
-      IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
-         GenTrq = VS_RtPwr/GenSpeedF
+      IF ( PitCom(1) >= VS_Rgn3MP ) THEN ! We are in region 3 - power is constant
+         GenTrq = VS_RtTq
       ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
          GenTrq = 0.0
       ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
@@ -390,14 +393,20 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
 
+!	  IF (GenTrq >= VS_RtTq99) THEN
+!		  PC_VarMaxPit = PC_MaxPit
+!	  ELSE
+!		  PC_VarMaxPit = PC_MinPit
+!	  END IF
+
+	PC_VarMaxPit = PC_MaxPit
 
    ! Compute the current speed error and its integral w.r.t. time; saturate the
    !   integral term using the pitch angle limits:
-
       SpdErr    = GenSpeedF - PC_RefSpd                                 ! Current speed error
       IntSpdErr = IntSpdErr + SpdErr*ElapTime                           ! Current integral of speed error w.r.t. time
       IntSpdErr = saturate(IntSpdErr,PC_MinPit/( GK*PC_KI ),&
-											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
+											PC_VarMaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
    ! Compute the pitch commands associated with the proportional and integral
@@ -411,7 +420,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    !   saturate the overall command using the pitch angle limits:
 
       PitComT   = PitComP + PitComI                                     ! Overall command (unsaturated)
-      PitComT   = saturate(PitComT,PC_MinPit,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
+      PitComT   = saturate(PitComT,PC_MinPit,PC_VarMaxPit)				! Saturate the overall command using the pitch angle limits
 
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
@@ -427,7 +436,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
          PitRate(K) = saturate(PitRate(K),-PC_MaxRat,PC_MaxRat)		! Saturate the pitch rate of blade K using its maximum absolute value
          PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
-         PitCom(K)  = saturate(PitCom(K),PC_MinPit,PC_MaxPit)			! Saturate the overall command using the pitch angle limits
+         PitCom(K)  = saturate(PitCom(K),PC_MinPit,PC_VarMaxPit)			! Saturate the overall command using the pitch angle limits
 
       ENDDO          ! K - all blades
 
