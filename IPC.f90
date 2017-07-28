@@ -33,7 +33,20 @@ SUBROUTINE IPC(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi_1p, p
     rootMOOP2_2p = NotchFilter(rootMOOP2,DT,zeta_2p,omega_2p,gain_Notch_2p,iStatus)
     rootMOOP3_2p = NotchFilter(rootMOOP3,DT,zeta_2p,omega_2p,gain_Notch_2p,iStatus)
 
-    CALL IPC_core(rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, aziAngle, DT, iStatus, phil, gain_IPC_1p, pAngle1, pAngle2, pAngle3)
+    CALL IPC_core(rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, aziAngle, DT, iStatus, phil, gain_IPC_1p, pAngle1_1p, pAngle2_1p, pAngle3_1p)
+    CALL IPC_core(rootMOOP1_1p, rootMOOP2_1p, rootMOOP3_1p, aziAngle, DT, iStatus, phil, gain_IPC_1p, pAngle1_2p, pAngle2_2p, pAngle3_2p)
+
+    pAngle1_1p_F = SecLPFilter(pAngle1_1p,DT,zeta_L_1p,omega_L_1p,iStatus)
+    pAngle2_1p_F = SecLPFilter(pAngle2_1p,DT,zeta_L_1p,omega_L_1p,iStatus)
+    pAngle3_1p_F = SecLPFilter(pAngle3_1p,DT,zeta_L_1p,omega_L_1p,iStatus)
+
+    pAngle1_2p_F = SecLPFilter(pAngle1_2p,DT,zeta_L_2p,omega_L_2p,iStatus)
+    pAngle2_2p_F = SecLPFilter(pAngle2_2p,DT,zeta_L_2p,omega_L_2p,iStatus)
+    pAngle3_2p_F = SecLPFilter(pAngle3_2p,DT,zeta_L_2p,omega_L_2p,iStatus)
+
+    pAngle1 = pAngle1_1p_F + pAngle1_2p_F
+    pAngle2 = pAngle2_1p_F + pAngle2_2p_F
+    pAngle3 = pAngle3_1p_F + pAngle3_2p_F
 
 CONTAINS
     SUBROUTINE IPC_core(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, DT, iStatus, phi1, gain, pAngle1, pAngle2, pAngle3)
@@ -64,49 +77,46 @@ CONTAINS
         END IF
 
         !Body
-        CALL ColemanTransform()	!pass rootMOOPs through the Coleman transform
-        ! rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr
+        CALL ColemanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr)	        !pass rootMOOPs through the Coleman transform
 
         IntAxisDirect	= IntAxisDirect + DT * gain * axisDirect		!multiply with gain and take the integral
         IntAxisQuadr	= IntAxisQuadr + DT * gain * axisQuadr			!multiply with gain and take the integral
 
-        CALL ColemanTransformInverse()	!pass signal through the inverse Coleman transform
-        ! axisDirect, axisQuadr, aziAngle, phi1, pAngle1, pAngle2, pAngle3
+        CALL ColemanTransformInverse(axisDirect, axisQuadr, aziAngle, phi1, pAngle1, pAngle2, pAngle3)	!pass signal through the inverse Coleman transform
 
     END SUBROUTINE IPC_core
 
-    SUBROUTINE ColemanTransform()
-    ! rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr
+    SUBROUTINE ColemanTransform(rootMOOP1, rootMOOP2, rootMOOP3, aziAngle, axisDirect, axisQuadr)
     !The Coleman or d-q axis transformation transforms the root out of plane bending moments of each turbine blade
     !to a direct axis and a quadrature axis
 
         IMPLICIT NONE
-!
-!        REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
-!        REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
-!        REAL(4), INTENT(OUT)	:: axisDirect, axisQuadr			!direct axis and quadrature axis outputted by this transform
-!        REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
-!        REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
+
+        REAL(4), INTENT(IN)		:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
+        REAL(4), INTENT(IN)		:: aziAngle							!rotor azimuth angle
+        REAL(4), INTENT(OUT)	:: axisDirect, axisQuadr			!direct axis and quadrature axis outputted by this transform
+        REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
+        REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
 
         axisDirect	= 2/3 * (cos(aziAngle)*rootMOOP1 + cos(aziAngle+phi2)*rootMOOP2 + cos(aziAngle+phi3)*rootMOOP3)
         axisQuadr	= 2/3 * (sin(aziAngle)*rootMOOP1 + sin(aziAngle+phi2)*rootMOOP2 + sin(aziAngle+phi3)*rootMOOP3)
 
     END SUBROUTINE ColemanTransform
 
-    SUBROUTINE ColemanTransformInverse()
-    ! axisDirect, axisQuadr, aziAngle, phi1, rootMOOP1, rootMOOP2, rootMOOP3
+    SUBROUTINE ColemanTransformInverse(axisDirect, axisQuadr, aziAngle, phi1, PI, rootMOOP1, rootMOOP2, rootMOOP3)
     !The inverse Coleman or d-q axis transformation transforms the direct axis and quadrature axis
     !back to root out of plane bending moments of each turbine blade
 
         IMPLICIT NONE
 
-!        REAL(4), INTENT(IN)		:: axisDirect, axisQuadr			!direct axis and quadrature axis
-!        REAL(4), INTENT(IN)		:: aziAngle 						!rotor azimuth angle
-!        REAL(4), INTENT(IN)		:: phi1								!phase shift added to the azimuth angle TODO: better description
-!        REAL(4), INTENT(OUT)	:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
-!
-!        REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
-!        REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
+        REAL(4), INTENT(IN)		:: axisDirect, axisQuadr			!direct axis and quadrature axis
+        REAL(4), INTENT(IN)		:: aziAngle 						!rotor azimuth angle
+        REAL(4), INTENT(IN)		:: phi1								!phase shift added to the azimuth angle TODO: better description
+        REAL(4), INTENT(OUT)	:: rootMOOP1, rootMOOP2, rootMOOP3	!root out of plane bending moments of each blade
+
+        REAL(4), PARAMETER      :: PI                               !
+        REAL(4), PARAMETER		:: phi2 = 2/3*PI					! Phase difference to second blade
+        REAL(4), PARAMETER		:: phi3 = 4/3*PI					! Phase difference to third blade
 
         rootMOOP1 = cos(aziAngle+phi1)*axisDirect + sin(aziAngle+phi1)*axisQuadr
         rootMOOP2 = cos(aziAngle+phi1+phi2)*axisDirect + sin(aziAngle+phi1+phi2)*axisQuadr

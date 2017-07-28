@@ -423,10 +423,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       DO K = 1,NumBl ! Loop through all blades
 
          PitRate(K) = ( PitComT - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
-         PitRate(K) = saturate(PitRate(K),-PC_MaxRat,PC_MaxRat)		! Saturate the pitch rate of blade K using its maximum absolute value
+         PitRate(K) = saturate( PitRate(K), -PC_MaxRat, PC_MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
          PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
-         PitCom(K)  = saturate(PitCom(K),PC_MinPit,PC_MaxPit)			! Saturate the overall command using the pitch angle limits
+         PitCom(K)  = saturate( PitCom(K), PC_MinPit, PC_MaxPit )			! Saturate the overall command using the pitch angle limits
 
       ENDDO          ! K - all blades
 
