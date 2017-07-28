@@ -11,7 +11,6 @@ mingw32-make.exe
 :: Run
 cd ..\CertTest
 FAST_Win32.exe Test18.fst
-pause
 
 :: Make new folder with correct timestamp
 for /f "tokens=2 delims==" %%a in ('wmic OS Get localdatetime /value') do set "dt=%%a"

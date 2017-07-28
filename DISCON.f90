@@ -434,7 +434,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       PitComT   = PitComP + PitComI                                     ! Overall command (unsaturated)
       PitComT   = saturate(PitComT,PC_MinPit,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
 
-      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaNotch, phi, zetaNotch, iStatus, PitComIPC, PitComIPCF, rootMOOPF)
+!      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaNotch, phi, zetaNotch, iStatus, PitComIPC, PitComIPCF, rootMOOPF)
 
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
