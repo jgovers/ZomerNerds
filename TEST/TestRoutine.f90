@@ -4,25 +4,27 @@ SUBROUTINE TestRoutine(a,b,c,d,e,f)
 
     REAL(4),INTENT(INOUT)   :: a,b,c,d,e,f
 
-    CALL TestSubroutine()
+    CALL TestSubroutine(a,b,c)
+    CALL TestSubroutine(d,e,f)
 
     CONTAINS
 
-        SUBROUTINE TestSubRoutine()
+        SUBROUTINE TestSubRoutine(g,h,i)
 
             IMPLICIT NONE
 
-            CALL TestSubSubRoutine(a,b,c)
-            CALL TestSubSubRoutine(d,e,f)
+            REAL(4), INTENT(INOUT)  :: g,h,i
+
+            CALL TestSubSubRoutine()
 
 
         END SUBROUTINE TestSubRoutine
 
-        SUBROUTINE TestSubSubRoutine(g,h,i)
+        SUBROUTINE TestSubSubRoutine()
 
             IMPLICIT NONE
 
-            REAL(4),INTENT(INOUT)   :: g,h,i
+!            REAL(4),INTENT(INOUT)   :: g,h,i
 
             i = g*h
 
