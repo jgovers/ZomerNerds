@@ -43,9 +43,8 @@ REAL(4)                      :: DT                                              
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller, sec.
 REAL(4), PARAMETER           :: CornerFreq    =      0.7853981                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter, rad/s. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1Hz = 0.25Hz = 1.570796rad/s)
 REAL(4)                      :: GenSpeed
-REAL(4), SAVE                :: GenSpeedLast                                       ! Current  HSS (generator) speed, rad/s.
+REAL(4), SAVE                :: GenSpeedLast                                    ! Current  HSS (generator) speed, rad/s.
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed, rad/s.
-REAL(4), SAVE                :: GenSpeedF2Last
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
