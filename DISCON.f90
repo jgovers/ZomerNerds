@@ -1,5 +1,4 @@
 !=======================================================================
-!SUBROUTINE DISCON ( avrSWAP, from_SC, to_SC, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, NAME='DISCON')
 SUBROUTINE DISCON ( avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, NAME='DISCON')
 !DEC$ ATTRIBUTES DLLEXPORT :: DISCON
 
@@ -16,7 +15,9 @@ SUBROUTINE DISCON ( avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, N
    ! Note that gfortran v5.x on Mac produces compiler errors with the DLLEXPORT attribute,
    ! so I've added the compiler directive IMPLICIT_DLLEXPORT.
 
-USE, INTRINSIC :: ISO_C_Binding
+USE, INTRINSIC  :: ISO_C_Binding
+USE             :: FunctionToolbox
+USE             :: Filters
 
 IMPLICIT                        NONE
 #ifndef IMPLICIT_DLLEXPORT
@@ -133,7 +134,6 @@ IF ( I > 0 ) RootName = RootName(1:I)     ! remove it
 InFile = TRANSFER( accINFILE(1:LEN(InFile)),  InFile )
 I = INDEX(InFile,C_NULL_CHAR) - 1         ! if this has a c null character at the end...
 IF ( I > 0 ) InFile = InFile(1:I)         ! remove it
-
 
 
    ! Initialize aviFAIL to 0:
@@ -324,7 +324,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
     ! Filter the HSS (generator) speed measurement:
     ! Apply Low-Pass Filter
-    CALL LPFilter(iStatus,GenSpeed,DT,CornerFreq,GenSpeedF)
+    GenSpeedF = LPFilter(GenSpeed,DT,CornerFreq,iStatus)
 
 !=======================================================================
 
@@ -358,7 +358,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       IF ( iStatus == 0 )  LastGenTrq = GenTrq                 ! Initialize the value of LastGenTrq on the first pass only
       TrqRate = ( GenTrq - LastGenTrq )/ElapTime               ! Torque rate (unsaturated)
-      TrqRate = saturate(TrqRate, -VS_MaxRat, VS_MaxRat) 	   ! Saturate the torque rate using its maximum absolute value
+      TrqRate = saturate(TrqRate,-VS_MaxRat,VS_MaxRat) 	   ! Saturate the torque rate using its maximum absolute value
       GenTrq  = LastGenTrq + TrqRate*ElapTime                  ! Saturate the command using the torque rate limit
 
 
@@ -395,7 +395,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       SpdErr    = GenSpeedF - PC_RefSpd                                 ! Current speed error
       IntSpdErr = IntSpdErr + SpdErr*ElapTime                           ! Current integral of speed error w.r.t. time
-      IntSpdErr = saturate(IntSpdErr, PC_MinPit/( GK*PC_KI ), &
+      IntSpdErr = saturate(IntSpdErr,PC_MinPit/( GK*PC_KI ),&
 											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
@@ -410,7 +410,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    !   saturate the overall command using the pitch angle limits:
 
       PitComT   = PitComP + PitComI                                     ! Overall command (unsaturated)
-      PitComT   = saturate(PitComT, PC_MinPit, PC_MaxPit)				! Saturate the overall command using the pitch angle limits
+      PitComT   = saturate(PitComT,PC_MinPit,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
 
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
@@ -423,10 +423,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       DO K = 1,NumBl ! Loop through all blades
 
          PitRate(K) = ( PitComT - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
-         PitRate(K) = saturate(PitRate(K), -PC_MaxRat, PC_MaxRat)		! Saturate the pitch rate of blade K using its maximum absolute value
+         PitRate(K) = saturate(PitRate(K),-PC_MaxRat,PC_MaxRat)		! Saturate the pitch rate of blade K using its maximum absolute value
          PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
-         PitCom(K)  = saturate(PitCom(K), PC_MinPit, PC_MaxPit)			! Saturate the overall command using the pitch angle limits
+         PitCom(K)  = saturate(PitCom(K),PC_MinPit,PC_MaxPit)			! Saturate the overall command using the pitch angle limits
 
       ENDDO          ! K - all blades
 
@@ -513,7 +513,7 @@ ELSEIF( iStatus == -9 ) THEN
       READ( Un, IOSTAT=ErrStat ) VS_TrGnSp               ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
 
       CLOSE ( Un )
-   END IF
+   ENDIF
 
 
 ENDIF
@@ -522,71 +522,4 @@ avcMSG = TRANSFER( TRIM(ErrMsg)//C_NULL_CHAR, avcMSG, SIZE(avcMSG) )
 
 RETURN
 
-CONTAINS	!Lists the functions and subroutines used in DISCON
-
-	REAL FUNCTION saturate(inputValue, minValue, maxValue)
-	! Saturates inputValue. Makes sure it is not smaller than minValue and not larger than maxValue
-
-		IMPLICIT NONE
-		REAL(4), INTENT(IN)		:: inputValue, minValue, maxValue
-		saturate = MIN( MAX( inputValue, minValue ), maxValue)
-
-	END FUNCTION saturate
-
 END SUBROUTINE DISCON
-
-!=======================================================================
-!=======================================================================
-
-SUBROUTINE LPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
-! Discrete time Low-Pass Filter
-
-    IMPLICIT NONE
-
-	INTEGER, INTENT(IN)		:: iStatus
-    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-    REAL(4), INTENT(INOUT)  :: OutputSignal
-    REAL(4), SAVE           :: InputSignalLast
-
-    IF ( iStatus == 0 )  THEN           ! .TRUE. if we're on the first call to the DLL
-       OutputSignal    = InputSignal    ! Initialization of Output
-       InputSignalLast = InputSignal    ! Initialization of previous Input
-    ENDIF
-
-    OutputSignal     = (DT*CornerFreq*InputSignal + DT*CornerFreq*InputSignalLast - (DT*CornerFreq-2.0)*OutputSignal)/(DT*CornerFreq+2.0);
-
-    InputSignalLast   = InputSignal     !Save input signal for next time step
-
-END SUBROUTINE LPFilter
-
-!=======================================================================
-
-SUBROUTINE HPFilter(iStatus,InputSignal,DT,CornerFreq,OutputSignal)
-! Discrete time High-Pass Filter
-
-    IMPLICIT NONE
-
-	INTEGER, INTENT(IN)		:: iStatus
-    REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-    REAL(4), INTENT(INOUT)  :: OutputSignal
-    REAL(4), SAVE           :: InputSignalLast
-    REAL(4)                 :: K
-
-    IF ( iStatus == 0 )  THEN            ! .TRUE. if we're on the first call to the DLL
-        OutputSignal    = InputSignal    ! Initialization of Output
-        InputSignalLast = InputSignal    ! Initialization of previous Input
-    ENDIF
-
-    K = 2.0 / DT
-
-    OutputSignal = K/(CornerFreq + K)*InputSignal - K/(CornerFreq + K)*InputSignalLast - (CornerFreq - K)/(CornerFreq + K)*OutputSignal
-
-    InputSignalLast = InputSignal       !Save input signal for next time step
-
-END SUBROUTINE HPFilter
-
-!=======================================================================
-
-
-
-!=======================================================================
