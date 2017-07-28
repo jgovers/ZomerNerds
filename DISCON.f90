@@ -52,12 +52,12 @@ REAL(4)                      :: GK                                              
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, rad.
 REAL(4), PARAMETER           :: KInter        =       0.01
-REAL(4), PARAMETER           :: KNotch        =       0.001
+REAL(4), PARAMETER           :: KNotch        =       1
 REAL(4), SAVE                :: LastGenTrq                                      ! Commanded electrical generator torque the last time the controller was called, N-m.
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, sec.
 REAL(4), SAVE                :: LastTimeVS                                      ! Last time the torque controller was called, sec.
-REAL(4), PARAMETER           :: omegaLP       =      10.0
+REAL(4), PARAMETER           :: omegaLP       =    1000.0
 REAL(4), PARAMETER           :: omegaNotch    =       1.269330365
 REAL(4), PARAMETER           :: PC_KI         =       0.008068634               ! Integral gain for pitch controller at rated pitch (zero), (-).
 REAL(4), PARAMETER           :: PC_KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
@@ -277,7 +277,7 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT    '//Tab// &
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
-                          'rootMOOP1   '//Tab//'rootMOOP2   '//Tab//'rootMOOP3   '//Tab//'PitComIPC1 '//Tab//'PitComIPC2 '//Tab//'PitComIPC3 '//Tab// &
+                          'rootMOOPF1  '//Tab//'rootMOOPF2  '//Tab//'rootMOOPF3  '//Tab//'PitComIPC1 '//Tab//'PitComIPC2 '//Tab//'PitComIPC3 '//Tab// &
                           'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
@@ -434,8 +434,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       PitComT   = PitComP + PitComI                                     ! Overall command (unsaturated)
       PitComT   = saturate(PitComT,PC_MinPit,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
 
-!      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaNotch, phi, zetaNotch, iStatus, PitComIPC, PitComIPCF, rootMOOPF)
-
+      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, PitComIPC, PitComIPCF, rootMOOPF)
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
    ! NOTE: Since the current pitch angle may be different for each blade

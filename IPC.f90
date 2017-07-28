@@ -62,8 +62,8 @@ CONTAINS
         !Initialization
         IF(iStatus==0)  THEN
 			!Set integrals to be 0 in the first time step
-            IntAxisDirect = 0
-            IntAxisQuadr = 0
+            IntAxisDirect = 0.0
+            IntAxisQuadr = 0.0
         END IF
 
         !Body
@@ -72,7 +72,7 @@ CONTAINS
         IntAxisDirect	= IntAxisDirect + DT * KInter * axisDirect		!multiply with gain and take the integral
         IntAxisQuadr	= IntAxisQuadr + DT * KInter * axisQuadr			!multiply with gain and take the integral
 
-        CALL ColemanTransformInverse(axisDirect, axisQuadr, aziAngle, phi, PitComIPC)	!pass signal through the inverse Coleman transform
+        CALL ColemanTransformInverse(IntAxisDirect, IntAxisQuadr, aziAngle, phi, PitComIPC)	!pass signal through the inverse Coleman transform
 
     END SUBROUTINE IPC_core
 
@@ -87,11 +87,11 @@ CONTAINS
 
         REAL(4), INTENT(OUT)	:: axisDirect, axisQuadr			!direct axis and quadrature axis outputted by this transform
 
-        REAL(4), PARAMETER		:: phi2 = 2/3*PI					!phase difference to second blade
-        REAL(4), PARAMETER		:: phi3 = 4/3*PI					!phase difference to third blade
+        REAL(4), PARAMETER		:: phi2 = 2.0/3.0*PI				!phase difference to second blade
+        REAL(4), PARAMETER		:: phi3 = 4.0/3.0*PI    			!phase difference to third blade
 
-        axisDirect	= 2/3 * (cos(aziAngle)*rootMOOP(1) + cos(aziAngle+phi2)*rootMOOP(2) + cos(aziAngle+phi3)*rootMOOP(3))
-        axisQuadr	= 2/3 * (sin(aziAngle)*rootMOOP(1) + sin(aziAngle+phi2)*rootMOOP(2) + sin(aziAngle+phi3)*rootMOOP(3))
+        axisDirect	= 2.0/3.0 * (cos(aziAngle)*rootMOOP(1) + cos(aziAngle+phi2)*rootMOOP(2) + cos(aziAngle+phi3)*rootMOOP(3))
+        axisQuadr	= 2.0/3.0 * (sin(aziAngle)*rootMOOP(1) + sin(aziAngle+phi2)*rootMOOP(2) + sin(aziAngle+phi3)*rootMOOP(3))
 
     END SUBROUTINE ColemanTransform
 
@@ -106,8 +106,8 @@ CONTAINS
         REAL(4), INTENT(IN)		:: phi								!phase shift added to the azimuth angle TODO: better description
         REAL(4), INTENT(OUT)	:: PitComIPC (3)	                !root out of plane bending moments of each blade
 
-        REAL(4), PARAMETER		:: phi2 = 2/3*PI					! Phase difference to second blade
-        REAL(4), PARAMETER		:: phi3 = 4/3*PI					! Phase difference to third blade
+        REAL(4), PARAMETER		:: phi2 = 2.0/3.0*PI					! Phase difference to second blade
+        REAL(4), PARAMETER		:: phi3 = 4.0/3.0*PI					! Phase difference to third blade
 
         PitComIPC(1) = cos(aziAngle+phi)*axisDirect + sin(aziAngle+phi)*axisQuadr
         PitComIPC(2) = cos(aziAngle+phi+phi2)*axisDirect + sin(aziAngle+phi+phi2)*axisQuadr

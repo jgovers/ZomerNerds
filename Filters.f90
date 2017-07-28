@@ -27,7 +27,7 @@ MODULE Filters
 
         END FUNCTION LPFilter
 !=======================================================================
-        REAL FUNCTION SecLPFilter(InputSignal,DT,Damp,CornerFreq,iStatus)
+        REAL FUNCTION SecLPFilter(InputSignal, DT, CornerFreq, Damp, iStatus)
             ! Discrete time second order Low-Pass Filter
 
             IMPLICIT NONE
@@ -79,7 +79,8 @@ MODULE Filters
 
         END FUNCTION HPFilter
 !=======================================================================
-        REAL FUNCTION NotchFilter(InputSignal,DT,Damp,CornerFreq,K,iStatus)
+        REAL FUNCTION NotchFilter(InputSignal, DT, K, CornerFreq, Damp, iStatus)
+
             ! Discrete time inverted Notch Filter
 
             IMPLICIT NONE
