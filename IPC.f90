@@ -1,4 +1,4 @@
-SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, PitComIPC, PitComIPCF, rootMOOPF)
+SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, instLP, instNotch, NumBl, PitComIPCF)
 ! The individual pitch control module
 	USE Filters
 
@@ -17,25 +17,31 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
     REAL(4), INTENT(IN)		:: zetaNotch       					!
 
 	INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
+    INTEGER                 :: inst
+    INTEGER, INTENT(IN)     :: instLP
+    INTEGER, INTENT(IN)     :: instNotch
+    INTEGER                 :: K
+    INTEGER, INTENT(IN)     :: NumBl
 
 	!Outputs
-	REAL(4), INTENT(OUT)    :: PitComIPC  (3)                      ! Pitch angle of each rotor blade
     REAL(4), INTENT(OUT)    :: PitComIPCF (3)                      ! Filtered pitch angle of each rotor blade
-    REAL(4), INTENT(OUT)    :: rootMOOPF  (3)                       ! Filtered RootMoop
 
     !Local variables
     REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
+    REAL(4)                 :: rootMOOPF (3), PitComIPC (3)
 
     !Filter rootMOOPs
-    rootMOOPF(1) = NotchFilter(rootMOOP(1), DT, KNotch, omegaNotch, zetaNotch, iStatus)
-    rootMOOPF(2) = NotchFilter(rootMOOP(2), DT, KNotch, omegaNotch, zetaNotch, iStatus)
-    rootMOOPF(3) = NotchFilter(rootMOOP(3), DT, KNotch, omegaNotch, zetaNotch, iStatus)
+    DO K = 1,NumBl
+        inst = K
+        rootMOOPF(K) = NotchFilter(rootMOOP(K), DT, KNotch, omegaNotch, zetaNotch, iStatus, inst, instNotch)
+    END DO
 
     CALL IPC_core(rootMOOPF, aziAngle, DT, KInter, phi, iStatus, PitComIPC)
 
-    PitComIPCF(1) = SecLPFilter(PitComIPC(1), DT, omegaLP, zetaLP, iStatus)
-    PitComIPCF(2) = SecLPFilter(PitComIPC(2), DT, omegaLP, zetaLP, iStatus)
-    PitComIPCF(3) = SecLPFilter(PitComIPC(3), DT, omegaLP, zetaLP, iStatus)
+    DO K = 1,NumBl
+        inst = K
+        PitComIPCF(K) = SecLPFilter(PitComIPC(K), DT, omegaLP, zetaLP, iStatus, inst, instLP)
+    END DO
 
 CONTAINS
     SUBROUTINE IPC_core(rootMOOP, aziAngle, DT, KInter, phi, iStatus, PitComIPC)

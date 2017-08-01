@@ -51,7 +51,7 @@ REAL(4)                      :: GenTrq                                          
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, rad.
-REAL(4), PARAMETER           :: KInter        =       0.0001
+REAL(4), PARAMETER           :: KInter        =       0.0000000008
 REAL(4), PARAMETER           :: KNotch        =       1
 REAL(4), SAVE                :: LastGenTrq                                      ! Commanded electrical generator torque the last time the controller was called, N-m.
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
@@ -70,12 +70,12 @@ REAL(4), PARAMETER           :: phi           =       0.436332313
 REAL(4), SAVE                :: PitCom    (3)                                   ! Commanded pitch of each blade the last time the controller was called, rad.
 REAL(4)                      :: PitComI                                         ! Integral term of command pitch, rad.
 REAL(4)                      :: PitComP                                         ! Proportional term of command pitch, rad.
-REAL(4)                      :: PitComT                                         ! Total command pitch based on the sum of the proportional and integral terms, rad.
+REAL(4)                      :: PitComT (3)                                     ! Total command pitch based on the sum of the proportional and integral terms, rad.
 REAL(4)                      :: PitComIPC (3)
 REAL(4)                      :: PitComIPCF (3)
 REAL(4)                      :: PitRate   (3)                                   ! Pitch rates of each blade based on the current pitch angles and current pitch command, rad/s.
 REAL(4), PARAMETER           :: R2D           =      57.295780                  ! Factor to convert radians to degrees.
-REAL(4)                      :: rootMOOP  (3)                                   ! Blade root out of plane bending moments, Nm.
+REAL(4)                      :: rootMOOP (3)                                    ! Blade root out of plane bending moments, Nm.
 REAL(4)                      :: rootMOOPF (3)                                   ! Blade root out of plane bending moments, Nm.
 REAL(4), PARAMETER           :: RPS2RPM       =       9.5492966                 ! Factor to convert radians per second to revolutions per minute.
 REAL(4)                      :: SpdErr                                          ! Current speed error, rad/s.
@@ -97,14 +97,16 @@ REAL(4), SAVE                :: VS_TrGnSp                                       
 REAL(4), PARAMETER           :: zetaLp        =       1.0
 REAL(4), PARAMETER           :: zetaNotch     =       0.5
 
+INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
+INTEGER(4)                   :: instLP        = 3                               ! Number of instances the second order Low-Pass Filter is called.
+INTEGER(4)                   :: instNotch     = 3                               ! Number of instances the Notch Filter is called.
 INTEGER(4)                   :: iStatus                                         ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 INTEGER(4)                   :: K                                               ! Loops through blades.
 INTEGER(4)                   :: NumBl                                           ! Number of blades, (-).
 INTEGER(4), PARAMETER        :: UnDb          = 85                              ! I/O unit for the debugging information
 INTEGER(4), PARAMETER        :: UnDb2         = 86                              ! I/O unit for the debugging information
 INTEGER(4), PARAMETER        :: Un            = 87                              ! I/O unit for pack/unpack (checkpoint & restart)
-INTEGER(4)                   :: ErrStat
 
 LOGICAL(1), PARAMETER        :: PC_DbgOut     = .TRUE.                          ! Flag to indicate whether to output debugging information
 
@@ -136,9 +138,9 @@ BlPitch  (3) =       avrSWAP(34)
 DT           =       avrSWAP( 3)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
-RootMOOP (1) =       avrSWAP(30)
-RootMOOP (2) =       avrSWAP(31)
-RootMOOP (3) =       avrSWAP(32)
+rootMOOP (1) =       avrSWAP(30)
+rootMOOP (2) =       avrSWAP(31)
+rootMOOP (3) =       avrSWAP(32)
 Time         =       avrSWAP( 2)
 
    ! Convert C character arrays to Fortran strings:
@@ -274,20 +276,18 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 
       WRITE (UnDb,'(/////)')
       WRITE (UnDb,'(A)')  'Time        '//Tab//'ElapTime    '//Tab//'HorWindV    '//Tab//'GenSpeed   '//Tab//'GenSpeedF  '//Tab//'RelSpdErr  '//Tab// &
-                          'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT    '//Tab// &
+                          'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT1   '//Tab//'PitComT2   '//Tab//'PitComT3   '//Tab// &
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
                           'rootMOOPF1  '//Tab//'rootMOOPF2  '//Tab//'rootMOOPF3  '//Tab//'PitComIPC1 '//Tab//'PitComIPC2 '//Tab//'PitComIPC3 '//Tab// &
                           'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
-                          '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
+                          '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
                           '(Nm)        '//Tab//'(Nm)        '//Tab//'(Nm)        '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '
-
-
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
@@ -431,11 +431,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Superimpose the individual commands to get the total pitch command;
    !   saturate the overall command using the pitch angle limits:
 
-      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, PitComIPC, PitComIPCF, rootMOOPF)
-
-      PitComT   = PitComP + PitComI !+ PitComIPCF                    ! Overall command (unsaturated)
-      PitComT   = saturate(PitComT,PC_MinPit,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
-
+      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, instLP, instNotch, NumBl, PitComIPCF)
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
    ! NOTE: Since the current pitch angle may be different for each blade
@@ -446,8 +442,11 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       DO K = 1,NumBl ! Loop through all blades
 
-         PitRate(K) = ( PitComT - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
-         PitRate(K) = saturate( PitRate(K), -PC_MaxRat, PC_MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
+         PitComT (K)  = PitComP + PitComI + PitComIPCF(K)                   ! Overall command (unsaturated)
+         PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
+
+         PitRate(K) = ( PitComT(K) - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
+         PitRate(K) = saturate( PitRate(K), -1.0*PC_MaxRat, PC_MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
          PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
          PitCom (K) = saturate( PitCom(K), PC_MinPit, PC_MaxPit )			! Saturate the overall command using the pitch angle limits
@@ -467,8 +466,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              SpdErr,      IntSpdErr, GK,       PitComP*R2D,      PitComI*R2D,       PitComT*R2D,            &
                                              PitRate*R2D,                      PitCom*R2D,                                                  &
                                              BlPitch*R2D,                      rootMOOP,                                                    &
-                                             rootMOOPF,                        PitComIPC,                                                   &
-                                             PitComIPCF
+                                             rootMOOPF,                        PitComIPC*R2D,                                               &
+                                             PitComIPCF*R2D
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last
