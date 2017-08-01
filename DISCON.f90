@@ -107,6 +107,7 @@ INTEGER(4)                   :: NumBl                                           
 INTEGER(4), PARAMETER        :: UnDb          = 85                              ! I/O unit for the debugging information
 INTEGER(4), PARAMETER        :: UnDb2         = 86                              ! I/O unit for the debugging information
 INTEGER(4), PARAMETER        :: Un            = 87                              ! I/O unit for pack/unpack (checkpoint & restart)
+INTEGER(4), PARAMETER        :: UnUser        = 88                              ! I/O unit for user defined parameter file
 
 LOGICAL(1), PARAMETER        :: PC_DbgOut     = .TRUE.                          ! Flag to indicate whether to output debugging information
 
@@ -117,6 +118,7 @@ CHARACTER(SIZE(accINFILE)-1) :: InFile                                          
 CHARACTER(SIZE(avcOUTNAME)-1):: RootName                                        ! a Fortran version of the input C string (not considered an array here)    [subtract 1 for the C null-character]
 CHARACTER(SIZE(avcMSG)-1)    :: ErrMsg                                          ! a Fortran version of the C string argument (not considered an array here) [subtract 1 for the C null-character]
 
+CHARACTER                    :: UserFile
 
    ! Load variables from calling program (See Appendix A of Bladed User's Guide):
 
@@ -153,6 +155,7 @@ InFile = TRANSFER( accINFILE(1:LEN(InFile)),  InFile )
 I = INDEX(InFile,C_NULL_CHAR) - 1         ! if this has a c null character at the end...
 IF ( I > 0 ) InFile = InFile(1:I)         ! remove it
 
+UserFile  = "DISCON.IN"
 
    ! Initialize aviFAIL to 0:
 
@@ -171,6 +174,11 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
               '5MW baseline wind turbine from DISCON.dll as written by J. '// &
               'Jonkman of NREL/NWTC for use in the IEA Annex XXIII OC3 '   // &
               'studies.'
+
+    ! Read user defined parameter file
+
+    OPEN(UnUser, UserFile)
+
 
    ! Determine some torque control parameters not specified directly:
 
