@@ -27,31 +27,30 @@ MODULE Filters
 
         END FUNCTION LPFilter
 !=======================================================================
-        REAL FUNCTION SecLPFilter(InputSignal,DT,Damp,CornerFreq,iStatus)
+        REAL FUNCTION SecLPFilter(InputSignal, DT, CornerFreq, Damp, iStatus, inst, instLp)
             ! Discrete time second order Low-Pass Filter
 
             IMPLICIT NONE
 
             REAL(4), INTENT(IN)     :: InputSignal,DT,Damp,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-            INTEGER, INTENT(IN)		:: iStatus
-            REAL(4), SAVE           :: InputSignalLast1,InputSignalLast2,OutputSignalLast1,OutputSignalLast2
+            INTEGER, INTENT(IN)		:: iStatus, inst, instLp
+            REAL(4), SAVE           :: InputSignalLast1 (3), InputSignalLast2 (3), OutputSignalLast1 (3), OutputSignalLast2 (3)
 
             IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
-                OutputSignalLast1   = InputSignal	! Initialization of Output
-                OutputSignalLast2   = InputSignal
-                InputSignalLast1    = InputSignal
-                InputSignalLast2    = InputSignal   !Initialization of previous Input
-
+                OutputSignalLast1(inst)  = InputSignal	! Initialization of Output
+                OutputSignalLast2(inst)  = InputSignal
+                InputSignalLast1(inst)   = InputSignal
+                InputSignalLast2(inst)   = InputSignal   !Initialization of previous Input
             ENDIF
 
             SecLPFilter         = 1/(4+4*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
-                ( (8-2*DT**2*CornerFreq**2)*OutputSignalLast1 + (-4+4*DT*Damp*CornerFreq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
-                (DT**2*CornerFreq**2)*InputSignal + (2*DT**2*CornerFreq**2)*InputSignalLast1 + (DT**2*CornerFreq**2)*InputSignalLast2 )
+                ( (8-2*DT**2*CornerFreq**2)*OutputSignalLast1(inst) + (-4+4*DT*Damp*CornerFreq-DT**2*CornerFreq**2)*OutputSignalLast2(inst) + &
+                (DT**2*CornerFreq**2)*InputSignal + (2*DT**2*CornerFreq**2)*InputSignalLast1(inst) + (DT**2*CornerFreq**2)*InputSignalLast2(inst) )
 
-            InputSignalLast2    = InputSignalLast1
-            InputSignalLast1    = InputSignal		!Save input signal for next time step
-            OutputSignalLast2   = OutputSignalLast1	!Save input signal for next time step
-            OutputSignalLast1   = SecLPFilter
+            InputSignalLast2(inst)   = InputSignalLast1 (inst)
+            InputSignalLast1(inst)   = InputSignal			!Save input signal for next time step
+            OutputSignalLast2(inst)  = OutputSignalLast1 (inst)		!Save input signal for next time step
+            OutputSignalLast1(inst)  = SecLPFilter
 
         END FUNCTION SecLPFilter
 !=======================================================================
@@ -79,31 +78,32 @@ MODULE Filters
 
         END FUNCTION HPFilter
 !=======================================================================
-        REAL FUNCTION NotchFilter(InputSignal,DT,Damp,CornerFreq,K,iStatus)
+        REAL FUNCTION NotchFilter(InputSignal, DT, K, CornerFreq, Damp, iStatus, inst, instNotch)
+
             ! Discrete time inverted Notch Filter
 
             IMPLICIT NONE
 
             REAL(4), INTENT(IN)     :: InputSignal,DT,Damp,CornerFreq,K    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-            INTEGER, INTENT(IN)		:: iStatus
-            REAL(4), SAVE           :: InputSignalLast1,InputSignalLast2,OutputSignalLast1,OutputSignalLast2
+            INTEGER, INTENT(IN)		:: iStatus, inst, instNotch
+            REAL(4), SAVE           :: InputSignalLast1 (3), InputSignalLast2 (3), OutputSignalLast1 (3), OutputSignalLast2 (3)
 
             IF ( iStatus == 0 )  THEN				! .TRUE. if we're on the first call to the DLL
-                OutputSignalLast1   = InputSignal	! Initialization of Output
-                OutputSignalLast2   = InputSignal
-                InputSignalLast1    = InputSignal
-                InputSignalLast2    = InputSignal   !Initialization of previous Input
+                OutputSignalLast1(inst)  = InputSignal	! Initialization of Output
+                OutputSignalLast2(inst)  = InputSignal
+                InputSignalLast1(inst)   = InputSignal
+                InputSignalLast2(inst)   = InputSignal   !Initialization of previous Input
 
             ENDIF
 
-            NotchFilter         = 1/(4+2*DT*Damp*CornerFreq+DT**2*CornerFreq**2) * &
-                ( (8-2*DT**2*CornerFreq**2)*OutputSignalLast1 + (-4+2*DT*Damp*CornerFreq-DT**2*CornerFreq**2)*OutputSignalLast2 + &
-                (2*DT*Damp*CornerFreq*K)*InputSignal + (-2*DT*Damp*CornerFreq*K)*InputSignalLast2 )
+            NotchFilter         = 1.0/(4.0+2.0*DT*Damp*CornerFreq+DT**2.0*CornerFreq**2.0) * &
+                ( (8.0-2.0*DT**2.0*CornerFreq**2.0)*OutputSignalLast1(inst) + (-4.0+2.0*DT*Damp*CornerFreq-DT**2.0*CornerFreq**2.0)*OutputSignalLast2(inst) + &
+                (2.0*DT*Damp*CornerFreq*K)*InputSignal + (-2.0*DT*Damp*CornerFreq*K)*InputSignalLast2(inst) )
 
-            InputSignalLast2    = InputSignalLast1
-            InputSignalLast1    = InputSignal			!Save input signal for next time step
-            OutputSignalLast2   = OutputSignalLast1		!Save input signal for next time step
-            OutputSignalLast1   = NotchFilter
+            InputSignalLast2(inst)   = InputSignalLast1(inst)
+            InputSignalLast1(inst)   = InputSignal			!Save input signal for next time step
+            OutputSignalLast2(inst)  = OutputSignalLast1(inst)		!Save input signal for next time step
+            OutputSignalLast1(inst)  = NotchFilter
 
         END FUNCTION NotchFilter
 !=======================================================================
