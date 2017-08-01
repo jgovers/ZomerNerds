@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_08_01_1504';
+TimeStamp = '2017_08_01_1548';
 doAvrSwap = false;
 
 %% Loading
