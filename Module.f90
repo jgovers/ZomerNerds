@@ -6,14 +6,14 @@ MODULE Filters
     CONTAINS
 
 !=======================================================================
-    	REAL FUNCTION LPFilter( InputSignal, DT, CornerFreq, iStatus, inst, instLP)
+    	REAL FUNCTION LPFilter( InputSignal, DT, CornerFreq, iStatus, inst)
             ! Discrete time Low-Pass Filter
 
             IMPLICIT NONE
 
             REAL(4), INTENT(IN)     :: InputSignal,DT,CornerFreq    ! DT = time step [s], CornerFreq = corner frequency [rad/s]
-            INTEGER, INTENT(IN)		:: iStatus, inst, instLP
-            REAL(4), DIMENSION(instLP), SAVE :: InputSignalLast, OutputSignalLast
+            INTEGER, INTENT(IN)		:: iStatus, inst
+            REAL(4), SAVE           :: InputSignalLast (3), OutputSignalLast (3)
 
             IF ( iStatus == 0 )  THEN           ! .TRUE. if we're on the first call to the DLL
                OutputSignalLast (inst) = InputSignal   ! Initialization of Output

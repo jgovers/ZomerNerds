@@ -57,8 +57,8 @@ REAL(4), SAVE                :: LastGenTrq                                      
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, sec.
 REAL(4), SAVE                :: LastTimeVS                                      ! Last time the torque controller was called, sec.
-REAL(4), PARAMETER           :: omegaLP       =    1000.0
-REAL(4), PARAMETER           :: omegaNotch    =       1.269330365
+REAL(4), PARAMETER           :: PC_omegaLP    =    1000.0
+REAL(4), PARAMETER           :: PC_omegaNotch =       1.269330365
 REAL(4), PARAMETER           :: PC_KI         =       0.008068634               ! Integral gain for pitch controller at rated pitch (zero), (-).
 REAL(4), PARAMETER           :: PC_KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
 REAL(4), PARAMETER           :: PC_KP         =       0.01882681                ! Proportional gain for pitch controller at rated pitch (zero), sec.
@@ -94,12 +94,19 @@ REAL(4), SAVE                :: VS_Slope25                                      
 REAL(4), PARAMETER           :: VS_SlPc       =      10.0                       ! Rated generator slip percentage in Region 2 1/2, %.
 REAL(4), SAVE                :: VS_SySp                                         ! Synchronous speed of region 2 1/2 induction generator, rad/s.
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
+REAL(4)                      :: Y_ErrLPFFast
+REAL(4)                      :: Y_ErrLPFSlow
+REAL(4)                      :: Y_MErr                                          ! Measured yaw error
+REAL(4), PARAMETER           :: Y_omegaLPFast =       1.0
+REAL(4), PARAMETER           :: Y_omegaLPSlow =       0.016666667
+REAL(4), PARAMETER           :: Y_zetaLP      =       0.5
 REAL(4), PARAMETER           :: zetaLp        =       1.0
 REAL(4), PARAMETER           :: zetaNotch     =       0.5
 
 INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
-INTEGER(4)                   :: instLP        = 3                               ! Number of instances the second order Low-Pass Filter is called.
+INTEGER(4)                   :: instLP        = 4                               ! Number of instances the second order Low-Pass Filter is called.
+INTEGER(4), PARAMETER        :: instLPTest    = 3
 INTEGER(4)                   :: instNotch     = 3                               ! Number of instances the Notch Filter is called.
 INTEGER(4)                   :: iStatus                                         ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 INTEGER(4)                   :: K                                               ! Loops through blades.
@@ -144,6 +151,7 @@ rootMOOP (1) =       avrSWAP(30)
 rootMOOP (2) =       avrSWAP(31)
 rootMOOP (3) =       avrSWAP(32)
 Time         =       avrSWAP( 2)
+Y_MErr       =       avrSWAP(24)
 
    ! Convert C character arrays to Fortran strings:
 
@@ -295,15 +303,13 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT1   '//Tab//'PitComT2   '//Tab//'PitComT3   '//Tab// &
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
-                          'rootMOOPF1  '//Tab//'rootMOOPF2  '//Tab//'rootMOOPF3  '//Tab//'PitComIPC1 '//Tab//'PitComIPC2 '//Tab//'PitComIPC3 '//Tab// &
-                          'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '
+                          'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
                           '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
-                          '(Nm)        '//Tab//'(Nm)        '//Tab//'(Nm)        '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '
+                          '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
@@ -362,7 +368,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
     ! Filter the HSS (generator) speed measurement:
     ! Apply Low-Pass Filter
-    GenSpeedF = LPFilter(GenSpeed,DT,CornerFreq,iStatus)
+    GenSpeedF = LPFilter( GenSpeed, DT, CornerFreq, iStatus, 1, 3)
 
 !=======================================================================
 
@@ -447,7 +453,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Superimpose the individual commands to get the total pitch command;
    !   saturate the overall command using the pitch angle limits:
 
-      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, instLP, instNotch, NumBl, PitComIPCF)
+      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, PC_omegaLP, PC_omegaNotch, phi, zetaLP, zetaNotch, iStatus, instLP, instNotch, NumBl, PitComIPCF)
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
    ! NOTE: Since the current pitch angle may be different for each blade
@@ -469,6 +475,14 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       ENDDO          ! K - all blades
 
+!=======================================================================
+
+    ! Yaw control:
+
+    Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2, 3)
+    Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3, 3)
+
+!=======================================================================
 
    ! Reset the value of LastTimePC to the current value:
 
@@ -478,12 +492,11 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Output debugging information if requested:
 
       IF ( PC_DbgOut )  THEN
-                        WRITE (UnDb,FmtDat)  Time,        ElapTime,  HorWindV, GenSpeed*RPS2RPM, GenSpeedF*RPS2RPM, 100.0*SpdErr/PC_RefSpd, &
-                                             SpdErr,      IntSpdErr, GK,       PitComP*R2D,      PitComI*R2D,       PitComT*R2D,            &
-                                             PitRate*R2D,                      PitCom*R2D,                                                  &
-                                             BlPitch*R2D,                      rootMOOP,                                                    &
-                                             rootMOOPF,                        PitComIPC*R2D,                                               &
-                                             PitComIPCF*R2D
+                        WRITE (UnDb,FmtDat)  Time,              ElapTime,   HorWindV,     GenSpeed*RPS2RPM, GenSpeedF*RPS2RPM, 100.0*SpdErr/PC_RefSpd, &
+                                             SpdErr,            IntSpdErr,  GK,           PitComP*R2D,      PitComI*R2D,       PitComT*R2D,            &
+                                             PitRate*R2D,                                 PitCom*R2D,                                                  &
+                                             BlPitch*R2D,                                 rootMOOP,                                                    &
+                                             PitComIPCF*R2D,    Y_MErr*R2D, Y_ErrLPFFast*R2D, Y_ErrLPFSlow*R2D
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last

@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_08_01_1548';
+TimeStamp = '2017_08_02_1816';
 doAvrSwap = false;
 
 %% Loading
@@ -48,8 +48,8 @@ PitComT2   = str2num(PitComT2(2:end,:));
 PitComT3U  = PitComT3(1,:);
 PitComT3   = str2num(PitComT3(2:end,:));
 
-PitComIPC1U = PitComIPC1(1,:);
-PitComIPC1  = str2num(PitComIPC1(2:end,:));
+% PitComIPC1U = PitComIPC1(1,:);
+% PitComIPC1  = str2num(PitComIPC1(2:end,:));
 PitComIPCF1U = PitComIPCF1(1,:);
 PitComIPCF1  = str2num(PitComIPCF1(2:end,:));
 PitComIPCF2U = PitComIPCF2(1,:);
@@ -59,18 +59,18 @@ PitComIPCF3  = str2num(PitComIPCF3(2:end,:));
 
 rootMOOP1U   = rootMOOP1(1,:);
 rootMOOP1    = str2num(rootMOOP1(2:end,:));
-rootMOOPF1U   = rootMOOPF1(1,:);
-rootMOOPF1    = str2num(rootMOOPF1(2:end,:));
+% rootMOOPF1U   = rootMOOPF1(1,:);
+% rootMOOPF1    = str2num(rootMOOPF1(2:end,:));
 
 rootMOOP2U   = rootMOOP2(1,:);
 rootMOOP2    = str2num(rootMOOP2(2:end,:));
-rootMOOPF2U   = rootMOOPF2(1,:);
-rootMOOPF2    = str2num(rootMOOPF2(2:end,:));
+% rootMOOPF2U   = rootMOOPF2(1,:);
+% rootMOOPF2    = str2num(rootMOOPF2(2:end,:));
 
 rootMOOP3U   = rootMOOP3(1,:);
 rootMOOP3    = str2num(rootMOOP3(2:end,:));
-rootMOOPF3U   = rootMOOPF3(1,:);
-rootMOOPF3    = str2num(rootMOOPF3(2:end,:));
+% rootMOOPF3U   = rootMOOPF3(1,:);
+% rootMOOPF3    = str2num(rootMOOPF3(2:end,:));
 
 HorWindVU  = HorWindV(1,:);
 HorWindV   = str2num(HorWindV(2:end,:));
@@ -80,6 +80,13 @@ HorWindV   = str2num(HorWindV(2:end,:));
 
 % aziAngle    = AvrSWAP0x28600x29(1,:);
 % aziAngle   = str2num(AvrSWAP0x28600x29(2:end,:));
+
+Y_MErrU             = Y_MErr(1,:);
+Y_MErr              = str2num(Y_MErr(2:end,:));
+Y_ErrLPFFastU       = Y_ErrLPFFast(1,:);
+Y_ErrLPFFast        = str2num(Y_ErrLPFFast(2:end,:));
+Y_ErrLPFSlowU    = Y_ErrLPFSlow(1,:);
+Y_ErrLPFSlow     = str2num(Y_ErrLPFSlow(2:end,:));
 
 %% Plotting
 figure
@@ -96,67 +103,72 @@ legend('GenSpeed','GenSpeedF')
 % legend('PitCom1')
 % subplot(2,1,2), plot(Time,PitRate1)
 % legend('PitRate1')
+% 
+% figure
+% title('Pitch')
+% hold on
+% plot(Time,PitCom1)
+% plot(Time,PitRate1)
+% plot(Time,BlPitch1)
+% plot(Time,PitComT1)
+% % plot(Time,GenTrq)
+% legend('PitCom1','PitRate1','BlPitch1','PitComT')
+% 
+% figure
+% title('rootMOOP')
+% hold on
+% plot(Time,rootMOOP1)
+% % plot(Time,rootMOOPF1)
+% plot(Time,rootMOOP2)
+% % plot(Time,rootMOOPF2)
+% plot(Time,rootMOOP3)
+% % plot(Time,rootMOOPF3)
+% legend('rootMOOP1','rootMOOP2','rootMOOP3')
+% 
+% figure
+% title('PitComIPC')
+% hold on
+% plot(Time,PitComIPCF1)
+% plot(Time,PitComIPCF2)
+% plot(Time,PitComIPCF3)
+% legend('PitComIPCF1','PitComIPCF2','PitComIPCF3')
+% 
+% figure
+% title('WindSpeed')
+% plot(Time,HorWindV)
+% legend('HorWindV')
+% 
+% figure
+% title('PitComT')
+% hold on
+% plot(Time,PitComT1)
+% plot(Time,PitComT2)
+% plot(Time,PitComT3)
+% legend('PitComT1','PitComT2','PitComT3')
+% 
+% figure
+% title('PitRate')
+% hold on
+% plot(Time,PitRate1)
+% plot(Time,PitRate2)
+% plot(Time,PitRate3)
+% legend('PitRate1','PiRate2','PitRate3')
+% 
+% figure
+% title('PitCom')
+% hold on
+% plot(Time,PitCom1)
+% plot(Time,PitCom2)
+% plot(Time,PitCom3)
+% legend('PitCom1','PitCom2','PitCom3')
 
 figure
-title('Pitch')
+title('Measured yaw error')
 hold on
-plot(Time,PitCom1)
-plot(Time,PitRate1)
-plot(Time,BlPitch1)
-plot(Time,PitComT1)
-% plot(Time,GenTrq)
-legend('PitCom1','PitRate1','BlPitch1','PitComT')
-
-figure
-title('rootMOOP')
-hold on
-plot(Time,rootMOOP1)
-plot(Time,rootMOOPF1)
-plot(Time,rootMOOP2)
-plot(Time,rootMOOPF2)
-plot(Time,rootMOOP3)
-plot(Time,rootMOOPF3)
-legend('rootMOOP1','rootMOOPF1','rootMOOP2','rootMOOPF2','rootMOOP3','rootMOOPF3')
-
-figure
-title('PitComIPC')
-hold on
-plot(Time,PitComIPCF1)
-plot(Time,PitComIPCF2)
-plot(Time,PitComIPCF3)
-legend('PitComIPCF1','PitComIPCF2','PitComIPCF3')
-
-figure
-title('WindSpeed')
-plot(Time,HorWindV)
-legend('HorWindV')
-
-figure
-title('PitComT')
-hold on
-plot(Time,PitComT1)
-plot(Time,PitComT2)
-plot(Time,PitComT3)
-legend('PitComT1','PitComT2','PitComT3')
-
-figure
-title('PitRate')
-hold on
-plot(Time,PitRate1)
-plot(Time,PitRate2)
-plot(Time,PitRate3)
-legend('PitRate1','PiRate2','PitRate3')
-
-figure
-title('PitCom')
-hold on
-plot(Time,PitCom1)
-plot(Time,PitCom2)
-plot(Time,PitCom3)
-legend('PitCom1','PitCom2','PitCom3')
-
-
-
+plot(Time,Y_MErr)
+plot(Time,Y_ErrLPFFast)
+plot(Time,Y_ErrLPFSlow)
+legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
 
 %% FFT
 % figure
