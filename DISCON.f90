@@ -96,9 +96,6 @@ REAL(4), SAVE                :: VS_SySp                                         
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
 REAL(4), PARAMETER           :: zetaLp        =       1.0
 REAL(4), PARAMETER           :: zetaNotch     =       0.5
-REAL(4)                      :: ReadTestA, ReadTestB
-REAL(4)                      :: ReadTestC
-
 
 INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
@@ -178,11 +175,18 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 
     ! Read user defined parameter file
 
-    OPEN( UnUser, file='DISCON.in')
+    OPEN( UnUser, file='DISCON.IN')
 
-    READ( UnUser, *) ReadTestA, ReadTestB
-
-    ReadTestC = ReadTestA + ReadTestB
+    READ( UnUser, *) avrSWAP(120)
+    READ( UnUser, *) avrSWAP(121)
+    READ( UnUser, *) avrSWAP(122)
+    READ( UnUser, *) avrSWAP(123)
+    READ( UnUser, *) avrSWAP(124)
+    READ( UnUser, *) avrSWAP(125)
+    READ( UnUser, *) avrSWAP(126)
+    READ( UnUser, *) avrSWAP(127)
+    READ( UnUser, *) avrSWAP(128)
+    READ( UnUser, *) avrSWAP(129)
 
    ! Determine some torque control parameters not specified directly:
 
@@ -292,20 +296,20 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
                           'rootMOOPF1  '//Tab//'rootMOOPF2  '//Tab//'rootMOOPF3  '//Tab//'PitComIPC1 '//Tab//'PitComIPC2 '//Tab//'PitComIPC3 '//Tab// &
-                          'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'ReadTestA  '//Tab//'ReadTestA  '//Tab//'ReadTestA  '
+                          'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
                           '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
                           '(Nm)        '//Tab//'(Nm)        '//Tab//'(Nm)        '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(-)        '//Tab//'(-)        '//Tab//'(-)        '
+                          '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
 
-      WRITE (UnDb2,'(A,85("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,85)
-      WRITE (UnDb2,'(A,85("'//Tab//'(-)"))')  '(s)'
+      WRITE (UnDb2,'(A,161("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,161)
+      WRITE (UnDb2,'(A,161("'//Tab//'(-)"))')  '(s)'
 
    ENDIF
 
@@ -479,7 +483,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              PitRate*R2D,                      PitCom*R2D,                                                  &
                                              BlPitch*R2D,                      rootMOOP,                                                    &
                                              rootMOOPF,                        PitComIPC*R2D,                                               &
-                                             PitComIPCF*R2D,                   ReadTestA,        ReadTestB,         ReadTestC
+                                             PitComIPCF*R2D
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last
@@ -493,7 +497,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    avrSWAP(45) = PitCom(1) ! Use the command angle of blade 1 if using collective pitch
 
-      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
+      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:161)
 
 !=======================================================================
 
