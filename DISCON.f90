@@ -349,7 +349,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
          GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
       ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
-         GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus)
+         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
+!         GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, VS_RtTq)
       ENDIF
 
 
@@ -393,13 +394,13 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
 
-!	  IF (GenTrq >= VS_RtTq99) THEN
-!		  PC_VarMaxPit = PC_MaxPit
-!	  ELSE
-!		  PC_VarMaxPit = PC_MinPit
-!	  END IF
+	  IF (GenTrq >= VS_RtTq99) THEN
+		  PC_VarMaxPit = PC_MaxPit
+	  ELSE
+		  PC_VarMaxPit = PC_MinPit
+	  END IF
 
-	PC_VarMaxPit = PC_MaxPit
+!	PC_VarMaxPit = PC_MaxPit
 
    ! Compute the current speed error and its integral w.r.t. time; saturate the
    !   integral term using the pitch angle limits:

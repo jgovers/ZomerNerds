@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_07_28_1804';
+TimeStamp = '2017_08_02_1437';
 doAvrSwap = true;
 
 %% Loading
@@ -14,6 +14,7 @@ tdfread([debugFolder 'Test18.SrvD.dbg']);
 if(doAvrSwap)
     tdfread([debugFolder 'Test18.SrvD.dbg2']);
 end
+
 
 %% Formatting
 TimeU       = Time(1,:);

@@ -17,20 +17,23 @@ MODULE FunctionToolbox
         END FUNCTION saturate
 !=======================================================================
 
-        REAL FUNCTION PI(input,Kp,Ki,DT,iStatus)
+        REAL FUNCTION PI(input,Kp,Ki,DT,iStatus,satMin,satMax)
             ! PI controller
             IMPLICIT NONE
 
             REAL(4), INTENT(IN)		::  input       ! Input signal for the PI controller
             REAL(4), INTENT(IN)		::  DT          ! Time step [s]
             REAL(4), INTENT(IN)		::  Kp, Ki      ! Proportional and integral gain
+            REAL(4), INTENT(IN)		::  satMin, satMax ! Input signal for the PI controller
             INTEGER, INTENT(IN)     ::  iStatus     ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
             REAL(4), SAVE			::	integral    ! Keeps track of the integral
 
             IF ( iStatus == 0 ) integral = 0		! Instantiate the integral on the first call
             integral = integral + Ki*input*DT		! Integrate
-            PI = Kp*input + integral 			    ! Calculate output
+            integral = saturate(integral, satMin, satMax)
 
+            PI = Kp*input + integral 			    ! Calculate output
+            PI = saturate(PI, satMin, satMax)
         END FUNCTION PI
 
 END MODULE FunctionToolbox
