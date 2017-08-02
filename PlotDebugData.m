@@ -4,8 +4,8 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_07_28_1708';
-doAvrSwap = true;
+TimeStamp = '2017_08_02_1125';
+doAvrSwap = false;
 
 %% Loading
 [~, userprofile] = dos('echo %USERPROFILE%');

@@ -4,10 +4,10 @@ PROGRAM Reader
 
     REAL(4)                 :: a,b,c
     INTEGER(4),PARAMETER    :: Un = 2
-    CHARACTER, PARAMETER    :: UserFile = 'DISCON.txt'
+    CHARACTER(10)           :: UserFile = 'DISCON.in'
 
     OPEN( Un, file=UserFile)
-    READ( Un,*) a,b
+    READ( 2,*) a,b
 
     c = a+b
 
