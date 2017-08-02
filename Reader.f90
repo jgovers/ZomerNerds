@@ -4,7 +4,7 @@ PROGRAM Reader
 
     REAL(4)                 :: a,b,c
     INTEGER(4),PARAMETER    :: Un = 2
-    CHARACTER(10)           :: UserFile = 'DISCON.in'
+    CHARACTER(*), PARAMETER :: UserFile = 'DISCON.in'
 
     OPEN( Un, file=UserFile)
     READ( 2,*) a,b
