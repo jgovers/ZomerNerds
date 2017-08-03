@@ -1,4 +1,4 @@
-SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, instLP, instNotch, NumBl, PitComIPCF)
+SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, NumBl, PitComIPCF)
 ! The individual pitch control module
 	USE Filters
 
@@ -18,8 +18,6 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
 
 	INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
     INTEGER                 :: inst
-    INTEGER, INTENT(IN)     :: instLP
-    INTEGER, INTENT(IN)     :: instNotch
     INTEGER                 :: K
     INTEGER, INTENT(IN)     :: NumBl
 
@@ -32,15 +30,15 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
 
     !Filter rootMOOPs
     DO K = 1,NumBl
-        inst = K
-        rootMOOPF(K) = NotchFilter(rootMOOP(K), DT, KNotch, omegaNotch, zetaNotch, iStatus, inst, instNotch)
+        inst = K        ! Instances 1-3 of the Notch Filter are reserved for this routine.
+        rootMOOPF(K) = NotchFilter(rootMOOP(K), DT, KNotch, omegaNotch, zetaNotch, iStatus, inst)
     END DO
 
     CALL IPC_core(rootMOOPF, aziAngle, DT, KInter, phi, iStatus, PitComIPC)
 
     DO K = 1,NumBl
-        inst = K
-        PitComIPCF(K) = SecLPFilter(PitComIPC(K), DT, omegaLP, zetaLP, iStatus, inst, instLP)
+        inst = K        ! Instances 1-3 of the Second order Low-Pass Filter are reserved for this routine.
+        PitComIPCF(K) = SecLPFilter(PitComIPC(K), DT, omegaLP, zetaLP, iStatus, inst)
     END DO
 
 CONTAINS

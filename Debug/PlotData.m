@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_08_02_1816';
+TimeStamp = '2017_08_03_1103';
 doAvrSwap = false;
 
 %% Loading
@@ -75,8 +75,8 @@ rootMOOP3    = str2num(rootMOOP3(2:end,:));
 HorWindVU  = HorWindV(1,:);
 HorWindV   = str2num(HorWindV(2:end,:));
 % 
-% GenTrqU  = AvrSWAP0x28470x29(1,:);
-% GenTrq   = str2num(AvrSWAP0x28470x29(2:end,:))./10000;
+GenTrqU  = AvrSWAP0x28470x29(1,:);
+GenTrq   = str2num(AvrSWAP0x28470x29(2:end,:))./10000;
 
 % aziAngle    = AvrSWAP0x28600x29(1,:);
 % aziAngle   = str2num(AvrSWAP0x28600x29(2:end,:));
@@ -87,6 +87,9 @@ Y_ErrLPFFastU       = Y_ErrLPFFast(1,:);
 Y_ErrLPFFast        = str2num(Y_ErrLPFFast(2:end,:));
 Y_ErrLPFSlowU    = Y_ErrLPFSlow(1,:);
 Y_ErrLPFSlow     = str2num(Y_ErrLPFSlow(2:end,:));
+
+Y_AccErrU    = Y_AccErr(1,:);
+Y_AccErr     = str2num(Y_AccErr(2:end,:));
 
 %% Plotting
 figure
@@ -104,15 +107,15 @@ legend('GenSpeed','GenSpeedF')
 % subplot(2,1,2), plot(Time,PitRate1)
 % legend('PitRate1')
 % 
-% figure
-% title('Pitch')
-% hold on
-% plot(Time,PitCom1)
-% plot(Time,PitRate1)
-% plot(Time,BlPitch1)
-% plot(Time,PitComT1)
-% % plot(Time,GenTrq)
-% legend('PitCom1','PitRate1','BlPitch1','PitComT')
+figure
+title('Pitch')
+hold on
+plot(Time,PitCom1)
+plot(Time,PitRate1)
+plot(Time,BlPitch1)
+plot(Time,PitComT1)
+% plot(Time,GenTrq)
+legend('PitCom1','PitRate1','BlPitch1','PitComT')
 % 
 % figure
 % title('rootMOOP')
@@ -133,11 +136,11 @@ legend('GenSpeed','GenSpeedF')
 % plot(Time,PitComIPCF3)
 % legend('PitComIPCF1','PitComIPCF2','PitComIPCF3')
 % 
-% figure
-% title('WindSpeed')
-% plot(Time,HorWindV)
-% legend('HorWindV')
-% 
+figure
+title('WindSpeed')
+plot(Time,HorWindV)
+legend('HorWindV')
+
 % figure
 % title('PitComT')
 % hold on
@@ -169,6 +172,14 @@ plot(Time,Y_MErr)
 plot(Time,Y_ErrLPFFast)
 plot(Time,Y_ErrLPFSlow)
 legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+
+figure
+title('Integral of fast yaw error')
+hold on
+grid on
+plot(Time,Y_ErrLPFFast)
+plot(Time,Y_AccErr)
+legend('Y ErrLPFFast','Y AccErr')
 
 %% FFT
 % figure
