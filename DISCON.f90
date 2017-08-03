@@ -57,15 +57,16 @@ REAL(4), SAVE                :: LastGenTrq                                      
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, sec.
 REAL(4), SAVE                :: LastTimeVS                                      ! Last time the torque controller was called, sec.
-REAL(4), PARAMETER           :: PC_omegaLP    =    1000.0
-REAL(4), PARAMETER           :: PC_omegaNotch =       1.269330365
 REAL(4), PARAMETER           :: PC_KI         =       0.008068634               ! Integral gain for pitch controller at rated pitch (zero), (-).
 REAL(4), PARAMETER           :: PC_KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
 REAL(4), PARAMETER           :: PC_KP         =       0.01882681                ! Proportional gain for pitch controller at rated pitch (zero), sec.
 REAL(4), PARAMETER           :: PC_MaxPit     =       1.570796                  ! Maximum pitch setting in pitch controller, rad.
 REAL(4), PARAMETER           :: PC_MaxRat     =       0.1396263                 ! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
-REAL(4), PARAMETER           :: PC_MinPit     =       0.0                       ! Minimum pitch setting in pitch controller, rad.
+REAL(4)                      :: PC_MinPit                                       ! Minimum pitch setting in pitch controller, rad.
+REAL(4), PARAMETER           :: PC_omegaLP    =    1000.0
+REAL(4), PARAMETER           :: PC_omegaNotch =       1.269330365
 REAL(4), PARAMETER           :: PC_RefSpd     =     122.9096                    ! Desired (reference) HSS speed for pitch controller, rad/s.
+REAL(4)                      :: PC_SetPnt
 REAL(4), PARAMETER           :: phi           =       0.436332313
 REAL(4), SAVE                :: PitCom    (3)                                   ! Commanded pitch of each blade the last time the controller was called, rad.
 REAL(4)                      :: PitComI                                         ! Integral term of command pitch, rad.
@@ -94,14 +95,16 @@ REAL(4), SAVE                :: VS_Slope25                                      
 REAL(4), PARAMETER           :: VS_SlPc       =      10.0                       ! Rated generator slip percentage in Region 2 1/2, %.
 REAL(4), SAVE                :: VS_SySp                                         ! Synchronous speed of region 2 1/2 induction generator, rad/s.
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
+REAL(4)                      :: YawTest
 REAL(4), SAVE                :: Y_AccErr
 REAL(4)                      :: Y_ErrLPFFast
 REAL(4)                      :: Y_ErrLPFSlow
-REAL(4), PARAMETER           :: Y_ErrThresh   =      10.0
+REAL(4), PARAMETER           :: Y_ErrThresh   =       1.745329252                                   !104.71975512
+REAL(4), PARAMETER           :: Y_YawRate     =       0.005235988               ! Yaw rate [rad/s]
 REAL(4)                      :: Y_MErr                                          ! Measured yaw error
 REAL(4), PARAMETER           :: Y_omegaLPFast =       1.0
 REAL(4), PARAMETER           :: Y_omegaLPSlow =       0.016666667
-REAL(4)                      :: Y_YawRate                                       ! Demanded nacelle yaw rate
+REAL(4), SAVE                :: Y_YawEndT
 REAL(4), PARAMETER           :: Y_zetaLP      =       0.5
 REAL(4), PARAMETER           :: zetaLp        =       1.0
 REAL(4), PARAMETER           :: zetaNotch     =       0.5
@@ -148,11 +151,14 @@ BlPitch  (3) =       avrSWAP(34)
 DT           =       avrSWAP( 3)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
+PC_MinPit    =       avrSWAP( 6)
+PC_SetPnt    =       avrSWAP( 5)
 rootMOOP (1) =       avrSWAP(30)
 rootMOOP (2) =       avrSWAP(31)
 rootMOOP (3) =       avrSWAP(32)
 Time         =       avrSWAP( 2)
 Y_MErr       =       avrSWAP(24)
+
 
 avrSWAP(29)  =       YawControl
 
@@ -307,20 +313,20 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
                           'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-                          'Y_AccErr    '
+                          'Y_AccErr    '//Tab//'YawTest     '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
                           '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg*s)     '
+                          '(deg*s)     '//Tab//'(deg/s)     '
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
 
-      WRITE (UnDb2,'(A,161("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,161)
-      WRITE (UnDb2,'(A,161("'//Tab//'(-)"))')  '(s)'
+      WRITE (UnDb2,'(A,85("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,85)
+      WRITE (UnDb2,'(A,85("'//Tab//'(-)"))')  '(s)'
 
    ENDIF
 
@@ -333,11 +339,12 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
    PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
    Y_AccErr   = 0.0
+   YawTest    = 0.0
+   Y_YawEndT  = -1.0
 
    LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
    LastTimePC = Time - DT                       ! This will ensure that the pitch  controller is called on the first pass
    LastTimeVS = Time - DT                       ! This will ensure that the torque controller is called on the first pass
-
 
 ENDIF
 
@@ -444,7 +451,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       SpdErr    = GenSpeedF - PC_RefSpd                                 ! Current speed error
       IntSpdErr = IntSpdErr + SpdErr*ElapTime                           ! Current integral of speed error w.r.t. time
-      IntSpdErr = saturate(IntSpdErr,PC_MinPit/( GK*PC_KI ),&
+      IntSpdErr = saturate(IntSpdErr,PC_SetPnt/( GK*PC_KI ),&
 											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
@@ -469,8 +476,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       DO K = 1,NumBl ! Loop through all blades
 
-         PitComT (K)  = PitComP + PitComI + PitComIPCF(K)                   ! Overall command (unsaturated)
-         PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
+         PitComT (K)  = PitComP + PitComI                    ! Overall command (unsaturated)
+         PitComT (K)  = saturate(PitComT(K),PC_SetPnt,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
+         PitComT (K)  = PitComT(K) + PitComIPCF(K)
+         PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)
 
          PitRate(K) = ( PitComT(K) - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
          PitRate(K) = saturate( PitRate(K), -1.0*PC_MaxRat, PC_MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
@@ -483,19 +492,25 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 !=======================================================================
 
     ! Yaw control:
+    IF ( Y_YawEndT <= Time) THEN
 
-    Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
-    Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
+        YawTest = 0.0           ! This will be avrSWAP(48)
 
-    Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
+        Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
+        Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
 
-    IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
-        Y_YawRate   = 1.0
-    ELSEIF
-        Y_YawRate   = 0.0
+        Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
+
+        IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
+            Y_YawEndT   = Y_ErrLPFSlow/Y_YawRate + Time
+        END IF
+    ELSE
+        YawTest         = Y_YawRate     ! This will be avrSWAP(48)
+        Y_ErrLPFFast    = 0.0
+        Y_ErrLPFSlow    = 0.0
+        Y_AccErr        = 0.0
     END IF
 
-!Y_YawRate    =       avrSWAP(48)
 !=======================================================================
 
    ! Reset the value of LastTimePC to the current value:
@@ -511,7 +526,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              PitRate*R2D,                               PitCom*R2D,                                                  &
                                              BlPitch*R2D,                               rootMOOP,                                                    &
                                              PitComIPCF*R2D,                            Y_MErr*R2D, Y_ErrLPFFast*R2D,   Y_ErrLPFSlow*R2D,            &
-                                             Y_AccErr*R2D
+                                             Y_AccErr*R2D,      YawTest*R2D
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last
@@ -525,7 +540,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    avrSWAP(45) = PitCom(1) ! Use the command angle of blade 1 if using collective pitch
 
-      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:161)
+      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
 
 !=======================================================================
 

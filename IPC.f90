@@ -31,7 +31,7 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
     !Filter rootMOOPs
     DO K = 1,NumBl
         inst = K        ! Instances 1-3 of the Notch Filter are reserved for this routine.
-        rootMOOPF(K) = NotchFilter(rootMOOP(K), DT, KNotch, omegaNotch, zetaNotch, iStatus, inst)
+        rootMOOPF(K) = rootMOOP(K)  !NotchFilter(rootMOOP(K), DT, KNotch, omegaNotch, zetaNotch, iStatus, inst)
     END DO
 
     CALL IPC_core(rootMOOPF, aziAngle, DT, KInter, phi, iStatus, PitComIPC)

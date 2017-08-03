@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_08_03_1103';
+TimeStamp = '2017_08_03_1755';
 doAvrSwap = false;
 
 %% Loading
@@ -60,8 +60,8 @@ PitComIPCF1  = str2num(PitComIPCF1(2:end,:));
 % PitComIPCF3U = PitComIPCF3(1,:);
 % PitComIPCF3  = str2num(PitComIPCF3(2:end,:));
 
-% rootMOOP1U   = rootMOOP1(1,:);
-% rootMOOP1    = str2num(rootMOOP1(2:end,:));
+rootMOOP1U   = rootMOOP1(1,:);
+rootMOOP1    = str2num(rootMOOP1(2:end,:));
 % rootMOOPF1U   = rootMOOPF1(1,:);
 % rootMOOPF1    = str2num(rootMOOPF1(2:end,:));
 
@@ -84,15 +84,18 @@ HorWindV   = str2num(HorWindV(2:end,:));
 % aziAngle    = AvrSWAP0x28600x29(1,:);
 % aziAngle   = str2num(AvrSWAP0x28600x29(2:end,:));
 
-% Y_MErrU             = Y_MErr(1,:);
-% Y_MErr              = str2num(Y_MErr(2:end,:));
-% Y_ErrLPFFastU       = Y_ErrLPFFast(1,:);
-% Y_ErrLPFFast        = str2num(Y_ErrLPFFast(2:end,:));
-% Y_ErrLPFSlowU    = Y_ErrLPFSlow(1,:);
-% Y_ErrLPFSlow     = str2num(Y_ErrLPFSlow(2:end,:));
-% 
-% Y_AccErrU    = Y_AccErr(1,:);
-% Y_AccErr     = str2num(Y_AccErr(2:end,:));
+Y_MErrU             = Y_MErr(1,:);
+Y_MErr              = str2num(Y_MErr(2:end,:));
+Y_ErrLPFFastU       = Y_ErrLPFFast(1,:);
+Y_ErrLPFFast        = str2num(Y_ErrLPFFast(2:end,:));
+Y_ErrLPFSlowU    = Y_ErrLPFSlow(1,:);
+Y_ErrLPFSlow     = str2num(Y_ErrLPFSlow(2:end,:));
+
+Y_AccErrU    = Y_AccErr(1,:);
+Y_AccErr     = str2num(Y_AccErr(2:end,:));
+
+YawTestU    = YawTest(1,:);
+YawTest     = str2num(YawTest(2:end,:));     
 
 %% Plotting
 figure
@@ -120,25 +123,25 @@ plot(Time,PitComT1)
 % plot(Time,PitComT)
 % plot(Time,GenTrq)
 legend('PitCom1','BlPitch1','PitComT')
-% 
-% figure
-% title('rootMOOP')
-% hold on
-% plot(Time,rootMOOP1)
-% % plot(Time,rootMOOPF1)
+
+figure
+title('rootMOOP')
+hold on
+plot(Time,rootMOOP1)
+% plot(Time,rootMOOPF1)
 % plot(Time,rootMOOP2)
 % % plot(Time,rootMOOPF2)
 % plot(Time,rootMOOP3)
-% % plot(Time,rootMOOPF3)
-% legend('rootMOOP1','rootMOOP2','rootMOOP3')
-% 
+% plot(Time,rootMOOPF3)
+legend('rootMOOP1')
+
 figure
 title('PitComIPC')
 hold on
 plot(Time,PitComIPCF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
-legend('PitComIPCF1','PitComIPCF2','PitComIPCF3')
+legend('PitComIPCF1')
 % 
 figure
 title('WindSpeed')
@@ -169,21 +172,29 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
-% figure
-% title('Measured yaw error')
-% hold on
-% plot(Time,Y_MErr)
-% plot(Time,Y_ErrLPFFast)
-% plot(Time,Y_ErrLPFSlow)
-% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
-% 
-% figure
-% title('Integral of fast yaw error')
-% hold on
-% grid on
-% plot(Time,Y_ErrLPFFast)
-% plot(Time,Y_AccErr)
-% legend('Y ErrLPFFast','Y AccErr')
+figure
+title('Measured yaw error')
+hold on
+plot(Time,Y_MErr)
+plot(Time,Y_ErrLPFFast)
+plot(Time,Y_ErrLPFSlow)
+legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+
+figure
+title('Integral of fast yaw error')
+hold on
+grid on
+plot(Time,Y_ErrLPFFast)
+plot(Time,Y_AccErr)
+plot(Time,YawTest)
+legend('Y ErrLPFFast','Y AccErr','YawTest')
+
+figure
+title('YawTest')
+hold on
+grid on
+plot(Time,YawTest)
+legend('YawTest')
 
 %% FFT
 % figure
