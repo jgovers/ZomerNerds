@@ -28,3 +28,5 @@ copy Test18.outb %dbFolder%\Test18.outb
 copy Test18.sum %dbFolder%\Test18.sum
 copy Test18.AD.sum %dbFolder%\Test18.AD.sum
 copy Test18.ED.sum %dbFolder%\Test18.ED.sum
+
+echo %dbFolder%

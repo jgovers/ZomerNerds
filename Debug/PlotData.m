@@ -4,20 +4,35 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_08_03_1755';
-doAvrSwap = false;
+TimeStamp = '2017_08_07_1413';
+doAvrSwap = false;              % Read the AvrSwap debug file
+runCmdFromHere = true;          % Run the CompileRunAndDebug.cmd file from this matlab script
+saveAllFigures = true;          % Automatically save all figures in the debug folder
 
 %% Loading
-[~, userprofile] = dos('echo %USERPROFILE%');
-debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\' TimeStamp '\'];
-tdfread([debugFolder 'Test18.SrvD.dbg']);
-if(doAvrSwap)
-    tdfread([debugFolder 'Test18.SrvD.dbg2']);
+if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
+    [~,output] = dos('..\CompileRunAndDebug.cmd', '-echo');
+    index = strfind(output,'C:');
+    index = index(end);
+    debugFolder = [output(index:end-1) '\'];
+    disp(['debugFolder: ' debugFolder]);
+else                % otherwise get the debugfolder with the manual timestamp
+    [~, userprofile] = dos('echo %USERPROFILE%');
+    debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\' TimeStamp '\'];
 end
+
+
+tic
+tdfread([debugFolder 'Test18.SrvD.dbg']);
+
+if(doAvrSwap)
+    tdfread([debugFolder 'Test18.SrvD.dbg2']); %#ok<UNRCH>
+end
+toc
 
 %% Formatting
 TimeU       = Time(1,:);
-Time        = str2num(Time(2:end,:));
+Time        = str2num(Time(2:end,:)); %#ok<*ST2NM> suppresses all warnings about str2double
 
 GenSpeedU   = GenSpeed(1,:);
 GenSpeed    = str2num(GenSpeed(2:end,:));
@@ -95,7 +110,7 @@ Y_AccErrU    = Y_AccErr(1,:);
 Y_AccErr     = str2num(Y_AccErr(2:end,:));
 
 YawTestU    = YawTest(1,:);
-YawTest     = str2num(YawTest(2:end,:));     
+YawTest     = str2num(YawTest(2:end,:));    
 
 %% Plotting
 figure
@@ -104,6 +119,7 @@ hold on
 plot(Time,GenSpeed)
 plot(Time,GenSpeedF)
 legend('GenSpeed','GenSpeedF')
+
 
 % figure
 % title('Pitch')
@@ -202,5 +218,13 @@ legend('YawTest')
 % Pyy             = FFTrootMOOP1.*conj(FFTrootMOOP1);
 % % f               = 1000/251*(0:127);
 % plot(Pyy(2:50))
+
+%% Save figures
+if(saveAllFigures)
+    figArray=findall(0,'type','figure');
+    for i = 1:length(figArray)
+        saveas(figArray(i),[debugFolder 'figure' num2str(i) '.fig']);
+    end
+end
 
 
