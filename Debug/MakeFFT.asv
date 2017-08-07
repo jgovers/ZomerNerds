@@ -4,7 +4,7 @@ T = 0.00625; % Sampling period [s]
 Fs = 1/T; % Sampling frequency [Hz]
 N = length(Time); % Amount of samples [-]
 
-Y = fft(PitComIPCF1-mean(PitComIPCF1)); % Compute frequency response of fore-aft acceleration signal
+Y = fft(rootMOOP1-mean(rootMOOPF1)); % Compute frequency response of fore-aft acceleration signal
 
 % Y = fft(sin(aziAngle)); % Compute frequency response of azimuth signal
 
