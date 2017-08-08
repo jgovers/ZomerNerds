@@ -3,8 +3,10 @@ close all
 clearvars
 clc
 
+
 %% Settings
-TimeStamp = '2017_08_08_1147';
+totalTime = tic;
+TimeStamp = '2017_08_08_1732';
 doAvrSwap = true;              % Read the AvrSwap debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -12,10 +14,9 @@ saveAllFigures = false;          % Automatically save all figures in the debug f
 %% Loading
 if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     [~,output] = dos('..\CompileRunAndDebug.cmd', '-echo');
-    index = strfind(output,'C:');
-    index = index(end);
-    debugFolder = [output(index:end-1) '\'];
-    disp(['debugFolder: ' debugFolder]);
+    i = strfind(output,'C:');
+    i = i(end);
+    debugFolder = [output(i:end-1) '\'];
     clearvars index output TimeStamp
 else                % otherwise get the debugfolder with the manual timestamp
     [~, userprofile] = dos('echo %USERPROFILE%');
@@ -23,77 +24,35 @@ else                % otherwise get the debugfolder with the manual timestamp
     clearvars userprofile
 end
 
+tic
+% dbRaw = tdfread([debugFolder 'Test18.SrvD.dbg']);
+dbRaw = dlmread([debugFolder 'Test18.SrvD.dbg'],'\t',8,0);
+[~,vars] = size(dbRaw);
+fid = fopen([debugFolder 'Test18.SrvD.dbg']);
+header = textscan(fid,'%s','delimiter','\t');
+fclose(fid);
+header = strtrim(header{1,1}(1:vars));
+for i = 1:vars
+    db.(header{i}) = dbRaw(:,i);
+end
+toc
 
-dbStruct = tdfread([debugFolder 'Test18.SrvD.dbg']);
 
+tic
 if(doAvrSwap)
     AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
     AvrTime = AvrSWAP(:,1);
     AvrSWAP = AvrSWAP(:,2:end);
 end
-
-%% Formatting debugfile
-
-Time        = str2num(dbStruct.Time(2:end,:)); %#ok<*ST2NM> suppresses all warnings about str2double
-
-GenSpeed    = str2num(dbStruct.GenSpeed(2:end,:));
-GenSpeedF   = str2num(dbStruct.GenSpeedF(2:end,:));
-
-PitCom1   = str2num(dbStruct.PitCom1(2:end,:));
-PitCom2   = str2num(dbStruct.PitCom2(2:end,:));
-PitCom3   = str2num(dbStruct.PitCom3(2:end,:));
-
-PitRate1   = str2num(dbStruct.PitRate1(2:end,:));
-PitRate2   = str2num(dbStruct.PitRate2(2:end,:));
-PitRate3   = str2num(dbStruct.PitRate3(2:end,:));
-
-BlPitch1   = str2num(dbStruct.BlPitch1(2:end,:));
-
-PitComT1   = str2num(dbStruct.PitComT1(2:end,:));
-PitComT2   = str2num(dbStruct.PitComT2(2:end,:));
-PitComT3   = str2num(dbStruct.PitComT3(2:end,:));
-
-% PitComT   = str2num(dbStruct.PitComT(2:end,:));
-
-% PitComIPC1  = str2num(dbStruct.PitComIPC1(2:end,:));
-PitComIPCF1  = str2num(dbStruct.PitComIPCF1(2:end,:));
-% PitComIPCF2  = str2num(dbStruct.PitComIPCF2(2:end,:));
-% PitComIPCF3  = str2num(dbStruct.PitComIPCF3(2:end,:));
-
-rootMOOP1    = str2num(dbStruct.rootMOOP1(2:end,:));
-% rootMOOPF1    = str2num(dbStruct.rootMOOPF1(2:end,:));
-
-% rootMOOP2    = str2num(dbStruct.rootMOOP2(2:end,:));
-% rootMOOPF2    = str2num(dbStruct.rootMOOPF2(2:end,:));
-
-% rootMOOP3    = str2num(dbStruct.rootMOOP3(2:end,:));
-% rootMOOPF3    = str2num(dbStruct.rootMOOPF3(2:end,:));
-
-HorWindV   = str2num(dbStruct.HorWindV(2:end,:));
-% 
-% GenTrq   = str2num(dbStruct.AvrSWAP0x28470x29(2:end,:))./10000;
-
-% aziAngle   = str2num(dbStruct.AvrSWAP0x28600x29(2:end,:));
-
-Y_MErr              = str2num(dbStruct.Y_MErr(2:end,:));
-
-Y_ErrLPFFast        = str2num(dbStruct.Y_ErrLPFFast(2:end,:));
-
-Y_ErrLPFSlow     = str2num(dbStruct.Y_ErrLPFSlow(2:end,:));
-
-Y_AccErr     = str2num(dbStruct.Y_AccErr(2:end,:));
-
-YawTest     = str2num(dbStruct.YawTest(2:end,:));
-
-Y_YawEndT   = str2num(dbStruct.Y_YawEndT(2:end,:));
+toc
 
 
 %% Plotting
 figure
 title('GenSpeed')
 hold on
-plot(Time,GenSpeed)
-plot(Time,GenSpeedF)
+plot(db.Time,db.GenSpeed)
+plot(db.Time,db.GenSpeedF)
 legend('GenSpeed','GenSpeedF')
 ylabel('Speed [rpm]')
 
@@ -113,10 +72,10 @@ plot(AvrTime,AvrSWAP(:,47))
 figure
 title('Pitch')
 hold on
-plot(Time,PitCom1)
+plot(db.Time,db.PitCom1)
 % plot(Time,PitRate1)
-plot(Time,BlPitch1)
-plot(Time,PitComT1)
+plot(db.Time,db.BlPitch1)
+plot(db.Time,db.PitComT1)
 % plot(Time,PitComT)
 % plot(Time,GenTrq)
 legend('PitCom1','BlPitch1','PitComT')
@@ -124,7 +83,7 @@ legend('PitCom1','BlPitch1','PitComT')
 figure
 title('rootMOOP')
 hold on
-plot(Time,rootMOOP1)
+plot(db.Time,db.rootMOOP1)
 % plot(Time,rootMOOPF1)
 % plot(Time,rootMOOP2)
 % % plot(Time,rootMOOPF2)
@@ -135,7 +94,7 @@ legend('rootMOOP1')
 figure
 title('PitComIPC')
 hold on
-plot(Time,PitComIPCF1)
+plot(db.Time,db.PitComIPCF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
 legend('PitComIPCF1')
@@ -143,7 +102,7 @@ legend('PitComIPCF1')
 figure
 title('WindVelocity')
 hold on
-plot(Time,HorWindV)
+plot(db.Time,db.HorWindV)
 legend('HorWindV')
 
 % figure
@@ -173,33 +132,33 @@ legend('HorWindV')
 figure
 title('Measured yaw error')
 hold on
-plot(Time,Y_MErr)
-plot(Time,Y_ErrLPFFast)
-plot(Time,Y_ErrLPFSlow)
+plot(db.Time,db.Y_MErr)
+plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.Y_ErrLPFSlow)
 legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
 
 figure
 title('Integral of fast yaw error')
 hold on
 grid on
-plot(Time,Y_ErrLPFFast)
-plot(Time,Y_AccErr)
-plot(Time,YawTest)
+plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.Y_AccErr)
+plot(db.Time,db.YawTest)
 legend('Y ErrLPFFast','Y AccErr','YawTest')
 
 figure
 title('YawTest')
 hold on
 grid on
-plot(Time,YawTest)
+plot(db.Time,db.YawTest)
 legend('YawTest')
 
 figure
 title('Yaw end time')
 hold on
-plot(Time,Y_YawEndT)
-plot(Time,Time)
-legend('Y_YawEndT','Time')
+plot(db.Time,db.Y_YawEndT)
+plot(db.Time,db.Time)
+legend('YawEndT','Time')
 
 %% FFT
 % figure
@@ -218,4 +177,4 @@ if(saveAllFigures)
     disp(['Saved all figures to ' debugFolder(1:end-1)]);
 end
 
-
+toc(totalTime)
