@@ -95,15 +95,15 @@ REAL(4), PARAMETER           :: VS_SlPc       =      10.0                       
 REAL(4), SAVE                :: VS_SySp                                         ! Synchronous speed of region 2 1/2 induction generator, rad/s.
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
 REAL(4)                      :: YawTest
-REAL(4), SAVE                :: Y_AccErr
-REAL(4)                      :: Y_ErrLPFFast
-REAL(4)                      :: Y_ErrLPFSlow
-REAL(4), PARAMETER           :: Y_ErrThresh   =       1.745329252                                   !104.71975512
+REAL(4), SAVE                :: Y_AccErr										! Accumulated yaw error [rad]
+REAL(4)                      :: Y_ErrLPFFast									! Filtered yaw error by fast low pass filter [rad]
+REAL(4)                      :: Y_ErrLPFSlow									! Filtered yaw error by slow low pass filter [rad]
+REAL(4), PARAMETER           :: Y_ErrThresh   =       1.745329252               ! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512)
 REAL(4), PARAMETER           :: Y_YawRate     =       0.005235988               ! Yaw rate [rad/s]
-REAL(4)                      :: Y_MErr                                          ! Measured yaw error
-REAL(4), PARAMETER           :: Y_omegaLPFast =       1.0
-REAL(4), PARAMETER           :: Y_omegaLPSlow =       0.016666667
-REAL(4), SAVE                :: Y_YawEndT
+REAL(4)                      :: Y_MErr                                          ! Measured yaw error [rad]
+REAL(4), PARAMETER           :: Y_omegaLPFast =       1.0						! Corner frequency fast low pass filter
+REAL(4), PARAMETER           :: Y_omegaLPSlow =       0.016666667				! Corner frequency slow low pass filter
+REAL(4), SAVE                :: Y_YawEndT										! Yaw end time. Indicates the time up until which the yaws with a fixed rate
 REAL(4), PARAMETER           :: Y_zetaLP      =       0.5
 REAL(4), PARAMETER           :: zetaLp        =       1.0
 REAL(4), PARAMETER           :: zetaNotch     =       0.5
@@ -160,6 +160,7 @@ Y_MErr       =       avrSWAP(24)
 
 
 avrSWAP(29)  =       YawControl
+!avrSWAP(102) =       YawControl
 
    ! Convert C character arrays to Fortran strings:
 
@@ -495,6 +496,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
     IF ( Y_YawEndT <= Time) THEN
 
         YawTest = 0.0           ! This will be avrSWAP(48)
+        avrSWAP(48) = 0.0
 
         Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
         Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
@@ -506,6 +508,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
         END IF
     ELSE
         YawTest         = SIGN(Y_YawRate,Y_MErr)     ! This will be avrSWAP(48)
+        avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
         Y_ErrLPFFast    = 0.0
         Y_ErrLPFSlow    = 0.0
         Y_AccErr        = 0.0
