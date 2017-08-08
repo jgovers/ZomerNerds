@@ -502,10 +502,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
         Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
 
         IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
-            Y_YawEndT   = Y_ErrLPFSlow/Y_YawRate + Time
+            Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
         END IF
     ELSE
-        YawTest         = Y_YawRate     ! This will be avrSWAP(48)
+        YawTest         = SIGN(Y_YawRate,Y_MErr)     ! This will be avrSWAP(48)
         Y_ErrLPFFast    = 0.0
         Y_ErrLPFSlow    = 0.0
         Y_AccErr        = 0.0
