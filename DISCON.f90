@@ -347,9 +347,9 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 
 ENDIF
 
+!=======================================================================
 
-
-   ! Main control calculations:
+   ! MAIN CONTROL CALCULATIONS
 
 IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control calculations if no error has occured and we are not on the last time step
 
@@ -383,7 +383,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 !=======================================================================
 
-   ! Variable-speed torque control:
+   ! VARIABLE-SPEED TORQUE CONTROL:
 
    ! Compute the elapsed time since the last call to the controller:
 
@@ -433,7 +433,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 !=======================================================================
 
-   ! Pitch control:
+   ! PITCH CONTROL:
 
    ! Compute the elapsed time since the last call to the controller:
 
@@ -490,7 +490,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 !=======================================================================
 
-    ! Yaw control:
+    ! YAW CONTROL:
+
     IF ( Y_YawEndT <= Time) THEN
 
         YawTest = 0.0           ! This will be avrSWAP(48)
@@ -520,12 +521,11 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Output debugging information if requested:
 
       IF ( PC_DbgOut )  THEN
-                        WRITE (UnDb,FmtDat)  Time,              ElapTime,   HorWindV,   GenSpeed*RPS2RPM, GenSpeedF*RPS2RPM, 100.0*SpdErr/PC_RefSpd, &
-                                             SpdErr,            IntSpdErr,  GK,         PitComP*R2D,      PitComI*R2D,       PitComT*R2D,            &
-                                             PitRate*R2D,                               PitCom*R2D,                                                  &
-                                             BlPitch*R2D,                               rootMOOP,                                                    &
-                                             PitComIPCF*R2D,                            Y_MErr*R2D, Y_ErrLPFFast*R2D,   Y_ErrLPFSlow*R2D,            &
-                                             Y_AccErr*R2D,      YawTest*R2D
+                        WRITE (UnDb,FmtDat)  Time,			ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC_RefSpd, &
+                                             SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
+                                             PitRate*R2D,								PitCom*R2D,														&
+                                             BlPitch*R2D,								rootMOOP,														&
+                                             PitComIPCF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last
