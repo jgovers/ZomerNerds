@@ -4,10 +4,10 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_08_07_1413';
-doAvrSwap = false;              % Read the AvrSwap debug file
+TimeStamp = '2017_08_07\2017_08_07_1739';
+doAvrSwap = true;              % Read the AvrSwap debug file
 runCmdFromHere = true;          % Run the CompileRunAndDebug.cmd file from this matlab script
-saveAllFigures = true;          % Automatically save all figures in the debug folder
+saveAllFigures = false;          % Automatically save all figures in the debug folder
 
 %% Loading
 if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
@@ -26,11 +26,13 @@ tic
 tdfread([debugFolder 'Test18.SrvD.dbg']);
 
 if(doAvrSwap)
-    tdfread([debugFolder 'Test18.SrvD.dbg2']); %#ok<UNRCH>
+    AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
+    AvrTime = AvrSWAP(:,1);
+    AvrSWAP = AvrSWAP(:,2:end);
 end
 toc
 
-%% Formatting
+%% Formatting debugfile
 TimeU       = Time(1,:);
 Time        = str2num(Time(2:end,:)); %#ok<*ST2NM> suppresses all warnings about str2double
 
@@ -112,6 +114,7 @@ Y_AccErr     = str2num(Y_AccErr(2:end,:));
 YawTestU    = YawTest(1,:);
 YawTest     = str2num(YawTest(2:end,:));    
 
+
 %% Plotting
 figure
 title('GenSpeed')
@@ -119,7 +122,12 @@ hold on
 plot(Time,GenSpeed)
 plot(Time,GenSpeedF)
 legend('GenSpeed','GenSpeedF')
+yaxis('Speed [rpm]')
 
+figure
+title('GenTorque')
+hold on
+plot(AvrTime,AvrSWAP(:,47))
 
 % figure
 % title('Pitch')
@@ -160,7 +168,8 @@ plot(Time,PitComIPCF1)
 legend('PitComIPCF1')
 % 
 figure
-title('WindSpeed')
+title('WindVelocity')
+hold on
 plot(Time,HorWindV)
 legend('HorWindV')
 
@@ -188,29 +197,29 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
-figure
-title('Measured yaw error')
-hold on
-plot(Time,Y_MErr)
-plot(Time,Y_ErrLPFFast)
-plot(Time,Y_ErrLPFSlow)
-legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
-
-figure
-title('Integral of fast yaw error')
-hold on
-grid on
-plot(Time,Y_ErrLPFFast)
-plot(Time,Y_AccErr)
-plot(Time,YawTest)
-legend('Y ErrLPFFast','Y AccErr','YawTest')
-
-figure
-title('YawTest')
-hold on
-grid on
-plot(Time,YawTest)
-legend('YawTest')
+% figure
+% title('Measured yaw error')
+% hold on
+% plot(Time,Y_MErr)
+% plot(Time,Y_ErrLPFFast)
+% plot(Time,Y_ErrLPFSlow)
+% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+% 
+% figure
+% title('Integral of fast yaw error')
+% hold on
+% grid on
+% plot(Time,Y_ErrLPFFast)
+% plot(Time,Y_AccErr)
+% plot(Time,YawTest)
+% legend('Y ErrLPFFast','Y AccErr','YawTest')
+% 
+% figure
+% title('YawTest')
+% hold on
+% grid on
+% plot(Time,YawTest)
+% legend('YawTest')
 
 %% FFT
 % figure
@@ -223,8 +232,10 @@ legend('YawTest')
 if(saveAllFigures)
     figArray=findall(0,'type','figure');
     for i = 1:length(figArray)
-        saveas(figArray(i),[debugFolder 'figure' num2str(i) '.fig']);
+        figure(figArray(i).Number)
+        saveas(figArray(i),[debugFolder 'fig' get(get(gca,'title'),'string') '.fig']);
     end
+    disp(['Saved all figures to ' debugFolder(1:end-1)]);
 end
 
 
