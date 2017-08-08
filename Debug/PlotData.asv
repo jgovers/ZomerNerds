@@ -118,8 +118,7 @@ Y_AccErr     = str2num(Y_AccErr(2:end,:));
 YawTestU    = YawTest(1,:);
 YawTest     = str2num(YawTest(2:end,:));
 
-Y_YawEndTU  = Y_YawEndT(1,:);
-Y_YawEndT   = str2num(Y_YawEndT(2:end,:));
+
 
 
 %% Plotting
@@ -227,13 +226,6 @@ hold on
 grid on
 plot(Time,YawTest)
 legend('YawTest')
-
-figure
-title('Yaw end time')
-hold on
-plot(Time,Y_YawEndT)
-plot(Time,Time)
-legend('Y_YawEndT','Time')
 
 %% FFT
 % figure

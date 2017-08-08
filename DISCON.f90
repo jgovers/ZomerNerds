@@ -312,14 +312,14 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
                           'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-                          'Y_AccErr    '//Tab//'YawTest     '
+                          'Y_AccErr    '//Tab//'YawTest     '//Tab//'Y_YawEndT   '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
                           '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg*s)     '//Tab//'(deg/s)     '
+                          '(deg*s)     '//Tab//'(deg/s)     '//Tab//'(sec)       '
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
@@ -526,6 +526,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              PitRate*R2D,								PitCom*R2D,														&
                                              BlPitch*R2D,								rootMOOP,														&
                                              PitComIPCF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
+                                             Y_AccErr*R2D,	YawTest*R2D,	Y_YawEndT
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last
