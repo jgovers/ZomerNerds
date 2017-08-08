@@ -4,9 +4,9 @@ clearvars
 clc
 
 %% Settings
-TimeStamp = '2017_08_07\2017_08_07_1739';
+TimeStamp = '2017_08_08_1147';
 doAvrSwap = true;              % Read the AvrSwap debug file
-runCmdFromHere = true;          % Run the CompileRunAndDebug.cmd file from this matlab script
+runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
 %% Loading
@@ -16,110 +16,76 @@ if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     index = index(end);
     debugFolder = [output(index:end-1) '\'];
     disp(['debugFolder: ' debugFolder]);
+    clearvars index output TimeStamp
 else                % otherwise get the debugfolder with the manual timestamp
     [~, userprofile] = dos('echo %USERPROFILE%');
     debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\' TimeStamp '\'];
+    clearvars userprofile
 end
 
 
-tic
-tdfread([debugFolder 'Test18.SrvD.dbg']);
+dbStruct = tdfread([debugFolder 'Test18.SrvD.dbg']);
 
 if(doAvrSwap)
     AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
     AvrTime = AvrSWAP(:,1);
     AvrSWAP = AvrSWAP(:,2:end);
 end
-toc
 
 %% Formatting debugfile
-% U denotes unit
 
-TimeU       = Time(1,:);
-Time        = str2num(Time(2:end,:)); %#ok<*ST2NM> suppresses all warnings about str2double
+Time        = str2num(dbStruct.Time(2:end,:)); %#ok<*ST2NM> suppresses all warnings about str2double
 
-GenSpeedU   = GenSpeed(1,:);
-GenSpeed    = str2num(GenSpeed(2:end,:));
-GenSpeedFU  = GenSpeedF(1,:);
-GenSpeedF   = str2num(GenSpeedF(2:end,:));
+GenSpeed    = str2num(dbStruct.GenSpeed(2:end,:));
+GenSpeedF   = str2num(dbStruct.GenSpeedF(2:end,:));
 
-PitCom1U  = PitCom1(1,:);
-PitCom1   = str2num(PitCom1(2:end,:));
-PitCom2U  = PitCom2(1,:);
-PitCom2   = str2num(PitCom2(2:end,:));
-PitCom3U  = PitCom3(1,:);
-PitCom3   = str2num(PitCom3(2:end,:));
+PitCom1   = str2num(dbStruct.PitCom1(2:end,:));
+PitCom2   = str2num(dbStruct.PitCom2(2:end,:));
+PitCom3   = str2num(dbStruct.PitCom3(2:end,:));
 
-PitRate1U  = PitRate1(1,:);
-PitRate1   = str2num(PitRate1(2:end,:));
-PitRate2U  = PitRate2(1,:);
-PitRate2   = str2num(PitRate2(2:end,:));
-PitRate3U  = PitRate3(1,:);
-PitRate3   = str2num(PitRate3(2:end,:));
+PitRate1   = str2num(dbStruct.PitRate1(2:end,:));
+PitRate2   = str2num(dbStruct.PitRate2(2:end,:));
+PitRate3   = str2num(dbStruct.PitRate3(2:end,:));
 
-BlPitch1U  = BlPitch1(1,:);
-BlPitch1   = str2num(BlPitch1(2:end,:));
+BlPitch1   = str2num(dbStruct.BlPitch1(2:end,:));
 
-PitComT1U  = PitComT1(1,:);
-PitComT1   = str2num(PitComT1(2:end,:));
-PitComT2U  = PitComT2(1,:);
-PitComT2   = str2num(PitComT2(2:end,:));
-PitComT3U  = PitComT3(1,:);
-PitComT3   = str2num(PitComT3(2:end,:));
+PitComT1   = str2num(dbStruct.PitComT1(2:end,:));
+PitComT2   = str2num(dbStruct.PitComT2(2:end,:));
+PitComT3   = str2num(dbStruct.PitComT3(2:end,:));
 
-% PitComTU  = PitComT(1,:);
-% PitComT   = str2num(PitComT(2:end,:));
+% PitComT   = str2num(dbStruct.PitComT(2:end,:));
 
-% PitComIPC1U = PitComIPC1(1,:);
-% PitComIPC1  = str2num(PitComIPC1(2:end,:));
-PitComIPCF1U = PitComIPCF1(1,:);
-PitComIPCF1  = str2num(PitComIPCF1(2:end,:));
-% PitComIPCF2U = PitComIPCF2(1,:);
-% PitComIPCF2  = str2num(PitComIPCF2(2:end,:));
-% PitComIPCF3U = PitComIPCF3(1,:);
-% PitComIPCF3  = str2num(PitComIPCF3(2:end,:));
+% PitComIPC1  = str2num(dbStruct.PitComIPC1(2:end,:));
+PitComIPCF1  = str2num(dbStruct.PitComIPCF1(2:end,:));
+% PitComIPCF2  = str2num(dbStruct.PitComIPCF2(2:end,:));
+% PitComIPCF3  = str2num(dbStruct.PitComIPCF3(2:end,:));
 
-rootMOOP1U   = rootMOOP1(1,:);
-rootMOOP1    = str2num(rootMOOP1(2:end,:));
-% rootMOOPF1U   = rootMOOPF1(1,:);
-% rootMOOPF1    = str2num(rootMOOPF1(2:end,:));
+rootMOOP1    = str2num(dbStruct.rootMOOP1(2:end,:));
+% rootMOOPF1    = str2num(dbStruct.rootMOOPF1(2:end,:));
 
-% rootMOOP2U   = rootMOOP2(1,:);
-% rootMOOP2    = str2num(rootMOOP2(2:end,:));
-% rootMOOPF2U   = rootMOOPF2(1,:);
-% rootMOOPF2    = str2num(rootMOOPF2(2:end,:));
+% rootMOOP2    = str2num(dbStruct.rootMOOP2(2:end,:));
+% rootMOOPF2    = str2num(dbStruct.rootMOOPF2(2:end,:));
 
-% rootMOOP3U   = rootMOOP3(1,:);
-% rootMOOP3    = str2num(rootMOOP3(2:end,:));
-% rootMOOPF3U   = rootMOOPF3(1,:);
-% rootMOOPF3    = str2num(rootMOOPF3(2:end,:));
+% rootMOOP3    = str2num(dbStruct.rootMOOP3(2:end,:));
+% rootMOOPF3    = str2num(dbStruct.rootMOOPF3(2:end,:));
 
-HorWindVU  = HorWindV(1,:);
-HorWindV   = str2num(HorWindV(2:end,:));
+HorWindV   = str2num(dbStruct.HorWindV(2:end,:));
 % 
-% GenTrqU  = AvrSWAP0x28470x29(1,:);
-% GenTrq   = str2num(AvrSWAP0x28470x29(2:end,:))./10000;
+% GenTrq   = str2num(dbStruct.AvrSWAP0x28470x29(2:end,:))./10000;
 
-% aziAngle    = AvrSWAP0x28600x29(1,:);
-% aziAngle   = str2num(AvrSWAP0x28600x29(2:end,:));
+% aziAngle   = str2num(dbStruct.AvrSWAP0x28600x29(2:end,:));
 
-Y_MErrU             = Y_MErr(1,:);
-Y_MErr              = str2num(Y_MErr(2:end,:));
+Y_MErr              = str2num(dbStruct.Y_MErr(2:end,:));
 
-Y_ErrLPFFastU       = Y_ErrLPFFast(1,:);
-Y_ErrLPFFast        = str2num(Y_ErrLPFFast(2:end,:));
+Y_ErrLPFFast        = str2num(dbStruct.Y_ErrLPFFast(2:end,:));
 
-Y_ErrLPFSlowU    = Y_ErrLPFSlow(1,:);
-Y_ErrLPFSlow     = str2num(Y_ErrLPFSlow(2:end,:));
+Y_ErrLPFSlow     = str2num(dbStruct.Y_ErrLPFSlow(2:end,:));
 
-Y_AccErrU    = Y_AccErr(1,:);
-Y_AccErr     = str2num(Y_AccErr(2:end,:));
+Y_AccErr     = str2num(dbStruct.Y_AccErr(2:end,:));
 
-YawTestU    = YawTest(1,:);
-YawTest     = str2num(YawTest(2:end,:));
+YawTest     = str2num(dbStruct.YawTest(2:end,:));
 
-Y_YawEndTU  = Y_YawEndT(1,:);
-Y_YawEndT   = str2num(Y_YawEndT(2:end,:));
+Y_YawEndT   = str2num(dbStruct.Y_YawEndT(2:end,:));
 
 
 %% Plotting
