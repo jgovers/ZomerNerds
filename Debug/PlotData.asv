@@ -1,0 +1,183 @@
+%% Cleaning
+close all
+clearvars
+clc
+
+
+%% Settings
+totalTime = tic;
+TimeStamp = '2017_08_08_1732';
+doAvrSwap = true;              % Read the AvrSwap debug file
+runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
+saveAllFigures = false;          % Automatically save all figures in the debug folder
+
+%% Loading
+if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
+    [~,output] = dos('..\CompileRunAndDebug.cmd', '-echo');
+    i = strfind(output,'C:');
+    i = i(end);
+    debugFolder = [output(i:end-1) '\'];
+    clearvars index output TimeStamp
+else                % otherwise get the debugfolder with the manual timestamp
+    [~, userprofile] = dos('echo %USERPROFILE%');
+    debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\' TimeStamp '\'];
+    if TimeStamp == 'rc'
+        d = dir(debugFolder);
+        [~,order
+    clearvars userprofile
+end
+
+tic
+% dbRaw = tdfread([debugFolder 'Test18.SrvD.dbg']);
+dbRaw = dlmread([debugFolder 'Test18.SrvD.dbg'],'\t',8,0);
+[~,vars] = size(dbRaw);
+fid = fopen([debugFolder 'Test18.SrvD.dbg']);
+header = textscan(fid,'%s','delimiter','\t');
+fclose(fid);
+header = strtrim(header{1,1}(1:vars));
+for i = 1:vars
+    db.(header{i}) = dbRaw(:,i);
+end
+toc
+
+
+tic
+if(doAvrSwap)
+    AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
+    AvrTime = AvrSWAP(:,1);
+    AvrSWAP = AvrSWAP(:,2:end);
+end
+toc
+
+
+%% Plotting
+figure
+title('GenSpeed')
+hold on
+plot(db.Time,db.GenSpeed)
+plot(db.Time,db.GenSpeedF)
+legend('GenSpeed','GenSpeedF')
+ylabel('Speed [rpm]')
+
+figure
+title('GenTorque')
+hold on
+plot(AvrTime,AvrSWAP(:,47))
+
+% figure
+% title('Pitch')
+% hold on
+% subplot(2,1,1), plot(Time,PitCom1)
+% legend('PitCom1')
+% subplot(2,1,2), plot(Time,PitRate1)
+% legend('PitRate1')
+% 
+figure
+title('Pitch')
+hold on
+plot(db.Time,db.PitCom1)
+% plot(Time,PitRate1)
+plot(db.Time,db.BlPitch1)
+plot(db.Time,db.PitComT1)
+% plot(Time,PitComT)
+% plot(Time,GenTrq)
+legend('PitCom1','BlPitch1','PitComT')
+
+figure
+title('rootMOOP')
+hold on
+plot(db.Time,db.rootMOOP1)
+% plot(Time,rootMOOPF1)
+% plot(Time,rootMOOP2)
+% % plot(Time,rootMOOPF2)
+% plot(Time,rootMOOP3)
+% plot(Time,rootMOOPF3)
+legend('rootMOOP1')
+
+figure
+title('PitComIPC')
+hold on
+plot(db.Time,db.PitComIPCF1)
+% plot(Time,PitComIPCF2)
+% plot(Time,PitComIPCF3)
+legend('PitComIPCF1')
+% 
+figure
+title('WindVelocity')
+hold on
+plot(db.Time,db.HorWindV)
+legend('HorWindV')
+
+% figure
+% title('PitComT')
+% hold on
+% plot(Time,PitComT1)
+% plot(Time,PitComT2)
+% plot(Time,PitComT3)
+% legend('PitComT1','PitComT2','PitComT3')
+% 
+% figure
+% title('PitRate')
+% hold on
+% plot(Time,PitRate1)
+% plot(Time,PitRate2)
+% plot(Time,PitRate3)
+% legend('PitRate1','PiRate2','PitRate3')
+% 
+% figure
+% title('PitCom')
+% hold on
+% plot(Time,PitCom1)
+% plot(Time,PitCom2)
+% plot(Time,PitCom3)
+% legend('PitCom1','PitCom2','PitCom3')
+% 
+figure
+title('Measured yaw error')
+hold on
+plot(db.Time,db.Y_MErr)
+plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.Y_ErrLPFSlow)
+legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+
+figure
+title('Integral of fast yaw error')
+hold on
+grid on
+plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.Y_AccErr)
+plot(db.Time,db.YawTest)
+legend('Y ErrLPFFast','Y AccErr','YawTest')
+
+figure
+title('YawTest')
+hold on
+grid on
+plot(db.Time,db.YawTest)
+legend('YawTest')
+
+figure
+title('Yaw end time')
+hold on
+plot(db.Time,db.Y_YawEndT)
+plot(db.Time,db.Time)
+legend('YawEndT','Time')
+
+%% FFT
+% figure
+% FFTrootMOOP1    = fft(rootMOOP1);
+% Pyy             = FFTrootMOOP1.*conj(FFTrootMOOP1);
+% % f               = 1000/251*(0:127);
+% plot(Pyy(2:50))
+
+%% Save figures
+if(saveAllFigures)
+    figArray=findall(0,'type','figure');
+    for i = 1:length(figArray)
+        figure(figArray(i).Number)
+        saveas(figArray(i),[debugFolder 'fig' get(get(gca,'title'),'string') '.fig']);
+    end
+    disp(['Saved all figures to ' debugFolder(1:end-1)]);
+end
+
+toc(totalTime)

@@ -11,4 +11,6 @@ mingw32-make.exe
 :: Run
 cd ..\CertTest
 FAST_Win32.exe Test18.fst
+
 pause
+
