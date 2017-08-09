@@ -21,6 +21,9 @@ if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
 else                % otherwise get the debugfolder with the manual timestamp
     [~, userprofile] = dos('echo %USERPROFILE%');
     debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\' TimeStamp '\'];
+    if TimeStamp == 'rc'
+        d = dir(debugFolder);
+        [~,order
     clearvars userprofile
 end
 
@@ -45,68 +48,6 @@ if(doAvrSwap)
     AvrSWAP = AvrSWAP(:,2:end);
 end
 toc
-
-%% Formatting debugfile
-% plotValues = {'Time','GenSpeed','GenSpeedF','PitCom1','PitRate1','BlPitch1','PitComT1', ...
-%               'PitComIPCF1','rootMOOP1','HorWindV','Y_MErr','Y_ErrLPFFast','Y_ErrLPFSlow', ...
-%               'Y_AccErr','YawTest','Y_YawEndT'};
-%           
-% for index = 1:length(plotValues)
-%     db.(plotValues{index}) = str2num(dbRaw.(plotValues{index})(2:end,:));
-% end
-          
-% Time        = str2num(dbRaw.Time(2:end,:)); %#ok<*ST2NM> suppresses all warnings about str2double
-% 
-% GenSpeed    = str2num(dbRaw.GenSpeed(2:end,:));
-% GenSpeedF   = str2num(dbRaw.GenSpeedF(2:end,:));
-% 
-% PitCom1   = str2num(dbRaw.PitCom1(2:end,:));
-% % PitCom2   = str2num(dbStruct.PitCom2(2:end,:));
-% % PitCom3   = str2num(dbStruct.PitCom3(2:end,:));
-% 
-% PitRate1   = str2num(dbRaw.PitRate1(2:end,:));
-% % PitRate2   = str2num(dbStruct.PitRate2(2:end,:));
-% % PitRate3   = str2num(dbStruct.PitRate3(2:end,:));
-% 
-% BlPitch1   = str2num(dbRaw.BlPitch1(2:end,:));
-% 
-% PitComT1   = str2num(dbRaw.PitComT1(2:end,:));
-% % PitComT2   = str2num(dbStruct.PitComT2(2:end,:));
-% % PitComT3   = str2num(dbStruct.PitComT3(2:end,:));
-% 
-% % PitComT   = str2num(dbStruct.PitComT(2:end,:));
-% 
-% % PitComIPC1  = str2num(dbStruct.PitComIPC1(2:end,:));
-% PitComIPCF1  = str2num(dbRaw.PitComIPCF1(2:end,:));
-% % PitComIPCF2  = str2num(dbStruct.PitComIPCF2(2:end,:));
-% % PitComIPCF3  = str2num(dbStruct.PitComIPCF3(2:end,:));
-% 
-% rootMOOP1    = str2num(dbRaw.rootMOOP1(2:end,:));
-% % rootMOOPF1    = str2num(dbStruct.rootMOOPF1(2:end,:));
-% 
-% % rootMOOP2    = str2num(dbStruct.rootMOOP2(2:end,:));
-% % rootMOOPF2    = str2num(dbStruct.rootMOOPF2(2:end,:));
-% 
-% % rootMOOP3    = str2num(dbStruct.rootMOOP3(2:end,:));
-% % rootMOOPF3    = str2num(dbStruct.rootMOOPF3(2:end,:));
-% 
-% HorWindV   = str2num(dbRaw.HorWindV(2:end,:));
-% % 
-% % GenTrq   = str2num(dbStruct.AvrSWAP0x28470x29(2:end,:))./10000;
-% 
-% % aziAngle   = str2num(dbStruct.AvrSWAP0x28600x29(2:end,:));
-% 
-% Y_MErr              = str2num(dbRaw.Y_MErr(2:end,:));
-% 
-% Y_ErrLPFFast        = str2num(dbRaw.Y_ErrLPFFast(2:end,:));
-% 
-% Y_ErrLPFSlow     = str2num(dbRaw.Y_ErrLPFSlow(2:end,:));
-% 
-% Y_AccErr     = str2num(dbRaw.Y_AccErr(2:end,:));
-% 
-% YawTest     = str2num(dbRaw.YawTest(2:end,:));
-% 
-% Y_YawEndT   = str2num(dbRaw.Y_YawEndT(2:end,:));
 
 
 %% Plotting
@@ -145,7 +86,7 @@ legend('PitCom1','BlPitch1','PitComT')
 figure
 title('rootMOOP')
 hold on
-plot(Time,rootMOOP1)
+plot(db.Time,db.rootMOOP1)
 % plot(Time,rootMOOPF1)
 % plot(Time,rootMOOP2)
 % % plot(Time,rootMOOPF2)
@@ -156,7 +97,7 @@ legend('rootMOOP1')
 figure
 title('PitComIPC')
 hold on
-plot(Time,PitComIPCF1)
+plot(db.Time,db.PitComIPCF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
 legend('PitComIPCF1')
@@ -164,7 +105,7 @@ legend('PitComIPCF1')
 figure
 title('WindVelocity')
 hold on
-plot(Time,HorWindV)
+plot(db.Time,db.HorWindV)
 legend('HorWindV')
 
 % figure
@@ -194,32 +135,32 @@ legend('HorWindV')
 figure
 title('Measured yaw error')
 hold on
-plot(Time,Y_MErr)
-plot(Time,Y_ErrLPFFast)
-plot(Time,Y_ErrLPFSlow)
+plot(db.Time,db.Y_MErr)
+plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.Y_ErrLPFSlow)
 legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
 
 figure
 title('Integral of fast yaw error')
 hold on
 grid on
-plot(Time,Y_ErrLPFFast)
-plot(Time,Y_AccErr)
-plot(Time,YawTest)
+plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.Y_AccErr)
+plot(db.Time,db.YawTest)
 legend('Y ErrLPFFast','Y AccErr','YawTest')
 
 figure
 title('YawTest')
 hold on
 grid on
-plot(Time,YawTest)
+plot(db.Time,db.YawTest)
 legend('YawTest')
 
 figure
 title('Yaw end time')
 hold on
-plot(Time,Y_YawEndT)
-plot(Time,Time)
+plot(db.Time,db.Y_YawEndT)
+plot(db.Time,db.Time)
 legend('YawEndT','Time')
 
 %% FFT

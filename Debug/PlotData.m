@@ -6,7 +6,7 @@ clc
 
 %% Settings
 totalTime = tic;
-TimeStamp = '2017_08_08_1732';
+timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the AvrSwap debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -20,11 +20,17 @@ if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     clearvars index output TimeStamp
 else                % otherwise get the debugfolder with the manual timestamp
     [~, userprofile] = dos('echo %USERPROFILE%');
-    debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\' TimeStamp '\'];
-    clearvars userprofile
+    debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\'];
+    if strcmp(timeStamp,'rc')   % if the timeStamp is rc, search for the most recent folder
+        d = dir(debugFolder);
+        [~,order] = sort([d.datenum]);
+        timeStamp = d(order==1).name;
+    end
+    debugFolder = [debugFolder timeStamp '\'];
+    clearvars userprofile d order
 end
 
-tic
+
 % dbRaw = tdfread([debugFolder 'Test18.SrvD.dbg']);
 dbRaw = dlmread([debugFolder 'Test18.SrvD.dbg'],'\t',8,0);
 [~,vars] = size(dbRaw);
@@ -35,16 +41,12 @@ header = strtrim(header{1,1}(1:vars));
 for i = 1:vars
     db.(header{i}) = dbRaw(:,i);
 end
-toc
 
-
-tic
 if(doAvrSwap)
     AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
     AvrTime = AvrSWAP(:,1);
     AvrSWAP = AvrSWAP(:,2:end);
 end
-toc
 
 
 %% Plotting
@@ -177,4 +179,5 @@ if(saveAllFigures)
     disp(['Saved all figures to ' debugFolder(1:end-1)]);
 end
 
+disp(['Folder: ' debugFolder])
 toc(totalTime)
