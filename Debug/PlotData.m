@@ -3,10 +3,9 @@ close all
 clearvars
 clc
 
-
 %% Settings
 totalTime = tic;
-timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
+timeStamp = '2017_08_09_1621';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the AvrSwap debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -41,6 +40,7 @@ header = strtrim(header{1,1}(1:vars));
 for i = 1:vars
     db.(header{i}) = dbRaw(:,i);
 end
+clearvars fid vars header
 
 if(doAvrSwap)
     AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
@@ -131,36 +131,36 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
-figure
-title('Measured yaw error')
-hold on
-plot(db.Time,db.Y_MErr)
-plot(db.Time,db.Y_ErrLPFFast)
-plot(db.Time,db.Y_ErrLPFSlow)
-legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
-
-figure
-title('Integral of fast yaw error')
-hold on
-grid on
-plot(db.Time,db.Y_ErrLPFFast)
-plot(db.Time,db.Y_AccErr)
-plot(db.Time,db.YawTest)
-legend('Y ErrLPFFast','Y AccErr','YawTest')
-
-figure
-title('YawTest')
-hold on
-grid on
-plot(db.Time,db.YawTest)
-legend('YawTest')
-
-figure
-title('Yaw end time')
-hold on
-plot(db.Time,db.Y_YawEndT)
-plot(db.Time,db.Time)
-legend('YawEndT','Time')
+% figure
+% title('Measured yaw error')
+% hold on
+% plot(db.Time,db.Y_MErr)
+% plot(db.Time,db.Y_ErrLPFFast)
+% plot(db.Time,db.Y_ErrLPFSlow)
+% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+% 
+% figure
+% title('Integral of fast yaw error')
+% hold on
+% grid on
+% plot(db.Time,db.Y_ErrLPFFast)
+% plot(db.Time,db.Y_AccErr)
+% plot(db.Time,db.YawTest)
+% legend('Y ErrLPFFast','Y AccErr','YawTest')
+% 
+% figure
+% title('YawTest')
+% hold on
+% grid on
+% plot(db.Time,db.YawTest)
+% legend('YawTest')
+% 
+% figure
+% title('Yaw end time')
+% hold on
+% plot(db.Time,db.Y_YawEndT)
+% plot(db.Time,db.Time)
+% legend('YawEndT','Time')
 
 %% FFT
 % figure
@@ -180,4 +180,4 @@ if(saveAllFigures)
 end
 
 disp(['Folder: ' debugFolder])
-toc(totalTime)
+toc(totalTime); clearvars totalTime i;
