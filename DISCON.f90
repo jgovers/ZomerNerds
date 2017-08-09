@@ -396,8 +396,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
      ! Compute the generator torque, which depends on which region we are in:
 
-      IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
-         GenTrq = VS_RtTq/GenSpeedF
+      IF (  PitCom(1) >= VS_Rgn3MP )  THEN ! We are in region 3 - power is constant
+         GenTrq = VS_RtTq
       ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
          GenTrq = 0.0
       ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
@@ -405,8 +405,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
          GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
       ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
-         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
-!         GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, VS_RtTq)
+!         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
+         GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, VS_RtTq)
       ENDIF
 
 
@@ -464,7 +464,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       IntSpdErr = IntSpdErr + SpdErr*ElapTime                           ! Current integral of speed error w.r.t. time
 
       IntSpdErr = saturate(IntSpdErr,PC_SetPnt/( GK*PC_KI ),&
-											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
+											PC_VarMaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
    ! Compute the pitch commands associated with the proportional and integral
