@@ -494,28 +494,31 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
     ! YAW CONTROL:
 
     IF (Time > 30.0) THEN   ! Testing if yaw torque control works
-        avrSWAP(41) = 1.0E10
+        avrSWAP(41) = 1.0E20
     END IF
-    IF ( Y_YawEndT <= Time) THEN
-
-        YawTest = 0.0           ! This will be avrSWAP(48)
-        avrSWAP(48) = 0.0
-
-        Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
-        Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
-
-        Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
-
-        IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
-            Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
-        END IF
-    ELSE
-        YawTest         = SIGN(Y_YawRate,Y_MErr)     ! This will be avrSWAP(48)
-        avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
-        Y_ErrLPFFast    = 0.0
-        Y_ErrLPFSlow    = 0.0
-        Y_AccErr        = 0.0
+    IF (Time > 50.0) THEN   ! Testing if yaw torque control works
+        avrSWAP(48) = Y_YawRate
     END IF
+!    IF ( Y_YawEndT <= Time) THEN
+!
+!        YawTest = 0.0           ! This will be avrSWAP(48)
+!        avrSWAP(48) = 0.0
+!
+!        Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
+!        Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
+!
+!        Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
+!
+!        IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
+!            Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
+!        END IF
+!    ELSE
+!        YawTest         = SIGN(Y_YawRate,Y_MErr)     ! This will be avrSWAP(48)
+!        avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
+!        Y_ErrLPFFast    = 0.0
+!        Y_ErrLPFSlow    = 0.0
+!        Y_AccErr        = 0.0
+!    END IF
 
 !=======================================================================
 
