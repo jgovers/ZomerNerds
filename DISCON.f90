@@ -117,7 +117,7 @@ INTEGER(4), PARAMETER        :: UnDb          = 85                              
 INTEGER(4), PARAMETER        :: UnDb2         = 86                              ! I/O unit for the debugging information
 INTEGER(4), PARAMETER        :: Un            = 87                              ! I/O unit for pack/unpack (checkpoint & restart)
 INTEGER(4), PARAMETER        :: UnUser        = 88                              ! I/O unit for user defined parameter file
-INTEGER(4), PARAMETER        :: YawControl    = 0
+INTEGER(4), PARAMETER        :: YawControl    = 1
 
 LOGICAL(1), PARAMETER        :: PC_DbgOut     = .TRUE.                          ! Flag to indicate whether to output debugging information
 
@@ -493,6 +493,9 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
     ! YAW CONTROL:
 
+    IF (Time > 30.0) THEN   ! Testing if yaw torque control works
+        avrSWAP(41) = 1.0E10
+    END IF
     IF ( Y_YawEndT <= Time) THEN
 
         YawTest = 0.0           ! This will be avrSWAP(48)

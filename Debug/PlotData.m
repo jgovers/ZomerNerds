@@ -3,12 +3,11 @@ close all
 clearvars
 clc
 
-
 %% Settings
 totalTime = tic;
 timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
-runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
+runCmdFromHere = true;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
 %% Loading
@@ -148,12 +147,19 @@ plot(db.Time,db.Y_AccErr)
 plot(db.Time,db.YawTest)
 legend('Y ErrLPFFast','Y AccErr','YawTest')
 
+% figure
+% title('YawTest')
+% hold on
+% grid on
+% plot(db.Time,db.YawTest)
+% legend('YawTest')
+
 figure
-title('YawTest')
+title('YawTorque')
 hold on
 grid on
-plot(avrTime,db.YawTest)
-legend('YawTest')
+plot(avrTime,avrSWAP(41))
+legend('YawTorque')
 
 figure
 title('Yaw end time')
