@@ -450,13 +450,13 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
 
-	  IF (GenTrq >= VS_RtTq99) THEN
-		  PC_VarMaxPit = PC_MaxPit
-	  ELSE
-		  PC_VarMaxPit = PC_MinPit
-	  END IF
+!	  IF (GenTrq >= VS_RtTq99) THEN
+!		  PC_VarMaxPit = PC_MaxPit
+!	  ELSE
+!		  PC_VarMaxPit = PC_MinPit
+!	  END IF
 
-!	PC_VarMaxPit = PC_MaxPit
+	PC_VarMaxPit = PC_MaxPit
 
    ! Compute the current speed error and its integral w.r.t. time; saturate the
    !   integral term using the pitch angle limits:
