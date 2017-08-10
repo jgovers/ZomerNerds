@@ -4,13 +4,13 @@ clearvars
 clc
 
 %% Settings
-totalTime = tic;
 timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = true;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
 %% Loading
+totalTime = tic;
 if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     [~,output] = dos('..\CompileRunAndDebug.cmd', '-echo');
     i = strfind(output,'C:');
