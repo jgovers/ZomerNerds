@@ -7,7 +7,7 @@ clc
 %% Settings
 totalTime = tic;
 timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
-doAvrSwap = true;              % Read the AvrSwap debug file
+doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
@@ -43,9 +43,9 @@ for i = 1:vars
 end
 
 if(doAvrSwap)
-    AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
-    AvrTime = AvrSWAP(:,1);
-    AvrSWAP = AvrSWAP(:,2:end);
+    avrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
+    avrTime = avrSWAP(:,1);
+    avrSWAP = avrSWAP(:,2:end);
 end
 
 
@@ -61,7 +61,7 @@ ylabel('Speed [rpm]')
 figure
 title('GenTorque')
 hold on
-plot(AvrTime,AvrSWAP(:,47))
+plot(avrTime,avrSWAP(:,47))
 
 % figure
 % title('Pitch')
@@ -152,7 +152,7 @@ figure
 title('YawTest')
 hold on
 grid on
-plot(db.Time,db.YawTest)
+plot(avrTime,db.YawTest)
 legend('YawTest')
 
 figure
