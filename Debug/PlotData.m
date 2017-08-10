@@ -139,34 +139,34 @@ plot(db.Time,db.Y_ErrLPFSlow)
 plot(db.Time,rad2deg(avrSWAP(:,37)))
 legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
 
-figure
-title('Integral of fast yaw error')
-hold on
-grid on
-plot(db.Time,db.Y_ErrLPFFast)
-plot(db.Time,db.Y_AccErr)
-legend('Y ErrLPFFast','Y AccErr')
-
 % figure
-% title('Yaw Rate')
+% title('Integral of fast yaw error')
 % hold on
 % grid on
-% plot(db.Time,avrSWAP(:,48))
-% legend('Yaw Rate')
-
-figure
-title('YawTorque')
-hold on
-grid on
-plot(avrTime,avrSWAP(:,41))
-legend('YawTorque')
-
-figure
-title('Yaw end time')
-hold on
-plot(db.Time,db.Y_YawEndT)
-plot(db.Time,db.Time)
-legend('YawEndT','Time')
+% plot(db.Time,db.Y_ErrLPFFast)
+% plot(db.Time,db.Y_AccErr)
+% legend('Y ErrLPFFast','Y AccErr')
+% 
+% % figure
+% % title('Yaw Rate')
+% % hold on
+% % grid on
+% % plot(db.Time,avrSWAP(:,48))
+% % legend('Yaw Rate')
+% 
+% figure
+% title('YawTorque')
+% hold on
+% grid on
+% plot(avrTime,avrSWAP(:,41))
+% legend('YawTorque')
+% 
+% figure
+% title('Yaw end time')
+% hold on
+% plot(db.Time,db.Y_YawEndT)
+% plot(db.Time,db.Time)
+% legend('YawEndT','Time')
 
 %% FFT
 % figure
