@@ -3,12 +3,11 @@ close all
 clearvars
 clc
 
-
 %% Settings
 totalTime = tic;
-TimeStamp = '2017_08_08_1732';
-doAvrSwap = true;              % Read the AvrSwap debug file
-runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
+timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
+doAvrSwap = true;              % Read the avrSWAP debug file
+runCmdFromHere = true;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
 %% Loading
@@ -20,14 +19,17 @@ if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     clearvars index output TimeStamp
 else                % otherwise get the debugfolder with the manual timestamp
     [~, userprofile] = dos('echo %USERPROFILE%');
-    debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\' TimeStamp '\'];
-    if TimeStamp == 'rc'
+    debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\'];
+    if strcmp(timeStamp,'rc')   % if the timeStamp is rc, search for the most recent folder
         d = dir(debugFolder);
-        [~,order
-    clearvars userprofile
+        [~,order] = sort([d.datenum]);
+        timeStamp = d(order==1).name;
+    end
+    debugFolder = [debugFolder timeStamp '\'];
+    clearvars userprofile d order
 end
 
-tic
+
 % dbRaw = tdfread([debugFolder 'Test18.SrvD.dbg']);
 dbRaw = dlmread([debugFolder 'Test18.SrvD.dbg'],'\t',8,0);
 [~,vars] = size(dbRaw);
@@ -38,16 +40,12 @@ header = strtrim(header{1,1}(1:vars));
 for i = 1:vars
     db.(header{i}) = dbRaw(:,i);
 end
-toc
 
-
-tic
 if(doAvrSwap)
-    AvrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
-    AvrTime = AvrSWAP(:,1);
-    AvrSWAP = AvrSWAP(:,2:end);
+    avrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
+    avrTime = avrSWAP(:,1);
+    avrSWAP = avrSWAP(:,2:end);
 end
-toc
 
 
 %% Plotting
@@ -62,7 +60,7 @@ ylabel('Speed [rpm]')
 figure
 title('GenTorque')
 hold on
-plot(AvrTime,AvrSWAP(:,47))
+plot(avrTime,avrSWAP(:,47))
 
 % figure
 % title('Pitch')
@@ -138,7 +136,8 @@ hold on
 plot(db.Time,db.Y_MErr)
 plot(db.Time,db.Y_ErrLPFFast)
 plot(db.Time,db.Y_ErrLPFSlow)
-legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+plot(db.Time,rad2deg(avrSWAP(:,37)))
+legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
 
 figure
 title('Integral of fast yaw error')
@@ -146,15 +145,21 @@ hold on
 grid on
 plot(db.Time,db.Y_ErrLPFFast)
 plot(db.Time,db.Y_AccErr)
-plot(db.Time,db.YawTest)
-legend('Y ErrLPFFast','Y AccErr','YawTest')
+legend('Y ErrLPFFast','Y AccErr')
+
+% figure
+% title('Yaw Rate')
+% hold on
+% grid on
+% plot(db.Time,db.YawTest)
+% legend('YawTest')
 
 figure
-title('YawTest')
+title('YawTorque')
 hold on
 grid on
-plot(db.Time,db.YawTest)
-legend('YawTest')
+plot(avrTime,avrSWAP(:,41))
+legend('YawTorque')
 
 figure
 title('Yaw end time')
@@ -180,4 +185,5 @@ if(saveAllFigures)
     disp(['Saved all figures to ' debugFolder(1:end-1)]);
 end
 
+disp(['Folder: ' debugFolder])
 toc(totalTime)

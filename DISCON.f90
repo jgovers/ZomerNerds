@@ -94,7 +94,6 @@ REAL(4), SAVE                :: VS_Slope25                                      
 REAL(4), PARAMETER           :: VS_SlPc       =      10.0                       ! Rated generator slip percentage in Region 2 1/2, %.
 REAL(4), SAVE                :: VS_SySp                                         ! Synchronous speed of region 2 1/2 induction generator, rad/s.
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
-REAL(4)                      :: YawTest
 REAL(4), SAVE                :: Y_AccErr										! Accumulated yaw error [rad]
 REAL(4)                      :: Y_ErrLPFFast									! Filtered yaw error by fast low pass filter [rad]
 REAL(4)                      :: Y_ErrLPFSlow									! Filtered yaw error by slow low pass filter [rad]
@@ -117,7 +116,7 @@ INTEGER(4), PARAMETER        :: UnDb          = 85                              
 INTEGER(4), PARAMETER        :: UnDb2         = 86                              ! I/O unit for the debugging information
 INTEGER(4), PARAMETER        :: Un            = 87                              ! I/O unit for pack/unpack (checkpoint & restart)
 INTEGER(4), PARAMETER        :: UnUser        = 88                              ! I/O unit for user defined parameter file
-INTEGER(4), PARAMETER        :: YawControl    = 1
+INTEGER(4), PARAMETER        :: YawControl    = 0
 
 LOGICAL(1), PARAMETER        :: PC_DbgOut     = .TRUE.                          ! Flag to indicate whether to output debugging information
 
@@ -160,7 +159,6 @@ Y_MErr       =       avrSWAP(24)
 
 
 avrSWAP(29)  =       YawControl
-!avrSWAP(102) =       YawControl
 
    ! Convert C character arrays to Fortran strings:
 
@@ -313,14 +311,14 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
                           'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-                          'Y_AccErr    '//Tab//'YawTest     '//Tab//'Y_YawEndT   '
+                          'Y_AccErr    '//Tab//'Y_YawEndT   '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
                           '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg*s)     '//Tab//'(deg/s)     '//Tab//'(sec)       '
+                          '(deg*s)     '//Tab//'(sec)       '
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
@@ -339,7 +337,6 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
    PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
    Y_AccErr   = 0.0
-   YawTest    = 0.0
    Y_YawEndT  = -1.0
 
    LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
@@ -492,33 +489,24 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 !=======================================================================
 
     ! YAW CONTROL:
+    IF ( Y_YawEndT <= Time) THEN
 
-    IF (Time > 30.0) THEN   ! Testing if yaw torque control works
-        avrSWAP(41) = 1.0E20
+        avrSWAP(48) = 0.0
+
+        Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
+        Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
+
+        Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
+
+        IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
+            Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
+        END IF
+    ELSE
+        avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
+        Y_ErrLPFFast    = 0.0
+        Y_ErrLPFSlow    = 0.0
+        Y_AccErr        = 0.0
     END IF
-    IF (Time > 50.0) THEN   ! Testing if yaw torque control works
-        avrSWAP(48) = Y_YawRate
-    END IF
-!    IF ( Y_YawEndT <= Time) THEN
-!
-!        YawTest = 0.0           ! This will be avrSWAP(48)
-!        avrSWAP(48) = 0.0
-!
-!        Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
-!        Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
-!
-!        Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
-!
-!        IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
-!            Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
-!        END IF
-!    ELSE
-!        YawTest         = SIGN(Y_YawRate,Y_MErr)     ! This will be avrSWAP(48)
-!        avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
-!        Y_ErrLPFFast    = 0.0
-!        Y_ErrLPFSlow    = 0.0
-!        Y_AccErr        = 0.0
-!    END IF
 
 !=======================================================================
 
@@ -535,7 +523,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              PitRate*R2D,								PitCom*R2D,														&
                                              BlPitch*R2D,								rootMOOP,														&
                                              PitComIPCF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
-                                             Y_AccErr*R2D,	YawTest*R2D,	Y_YawEndT
+                                             Y_AccErr*R2D,  Y_YawEndT
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last

@@ -145,15 +145,14 @@ hold on
 grid on
 plot(db.Time,db.Y_ErrLPFFast)
 plot(db.Time,db.Y_AccErr)
-plot(db.Time,db.YawTest)
-legend('Y ErrLPFFast','Y AccErr','YawTest')
+legend('Y ErrLPFFast','Y AccErr')
 
 % figure
-% title('YawTest')
+% title('Yaw Rate')
 % hold on
 % grid on
-% plot(db.Time,db.YawTest)
-% legend('YawTest')
+% plot(db.Time,avrSWAP(:,48))
+% legend('Yaw Rate')
 
 figure
 title('YawTorque')
