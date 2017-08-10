@@ -46,6 +46,7 @@ REAL(4)                      :: ElapTime                                        
 REAL(4)                      :: GenSpeed                                        ! Current  HSS (generator) speed [rad/s].
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed [rad/s].
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
+REAL(4)                   :: GenTrq_Reg        ! Temporary debug variable to show which GenTrq region is active
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, rad.
@@ -317,14 +318,14 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
                           'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-                          'Y_AccErr    '//Tab//'YawTest     '//Tab//'Y_YawEndT   '
+                          'Y_AccErr    '//Tab//'YawTest     '//Tab//'Y_YawEndT   '//Tab//'GenTrq_Reg '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
                           '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg*s)     '//Tab//'(deg/s)     '//Tab//'(sec)       '
+                          '(deg*s)     '//Tab//'(deg/s)     '//Tab//'(sec)       '//Tab//'(-)        '
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
@@ -398,15 +399,20 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       IF (  PitCom(1) >= VS_Rgn3MP )  THEN ! We are in region 3 - power is constant
          GenTrq = VS_RtTq
+         GenTrq_Reg = 1
       ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
          GenTrq = 0.0
+         GenTrq_Reg = 2
       ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
          GenTrq = VS_Slope15*( GenSpeedF - VS_CtInSp )
+         GenTrq_Reg = 3
       ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
          GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
+         GenTrq_Reg = 4
       ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
 !         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
          GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, VS_RtTq)
+         GenTrq_Reg = 5
       ENDIF
 
 
@@ -541,7 +547,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              PitRate*R2D,								PitCom*R2D,														&
                                              BlPitch*R2D,								rootMOOP,														&
                                              PitComIPCF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
-                                             Y_AccErr*R2D,	YawTest*R2D,	Y_YawEndT
+                                             Y_AccErr*R2D,	YawTest*R2D,	Y_YawEndT,  GenTrq_Reg
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last

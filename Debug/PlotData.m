@@ -5,7 +5,7 @@ clc
 
 %% Settings
 totalTime = tic;
-timeStamp = '2017_08_09_1621';               % set to 'rc' to just get the most recent folder
+timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the AvrSwap debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -62,6 +62,11 @@ figure
 title('GenTorque')
 hold on
 plot(AvrTime,AvrSWAP(:,47))
+ylabel('Torque [Nm]')
+yyaxis right
+plot(db.Time,db.GenTrq_Reg,'LineWidth',2)
+ylabel('Torque region')
+legend('GenSpeed', 'Torque Region')
 
 % figure
 % title('Pitch')
@@ -131,14 +136,14 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
-% figure
-% title('Measured yaw error')
-% hold on
-% plot(db.Time,db.Y_MErr)
-% plot(db.Time,db.Y_ErrLPFFast)
-% plot(db.Time,db.Y_ErrLPFSlow)
-% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
-% 
+figure
+title('Measured yaw error')
+hold on
+plot(db.Time,db.Y_MErr)
+plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.Y_ErrLPFSlow)
+legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+
 % figure
 % title('Integral of fast yaw error')
 % hold on
