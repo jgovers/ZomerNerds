@@ -17,12 +17,12 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
     REAL(4), INTENT(IN)		:: zetaNotch       					!
 
 	INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
-    INTEGER                 :: inst
-    INTEGER                 :: K
-    INTEGER, INTENT(IN)     :: NumBl
+    INTEGER                 :: inst                             ! Instance number, used to independently use the filter functions
+    INTEGER                 :: K                                ! Integer used to loop through turbine blades
+    INTEGER, INTENT(IN)     :: NumBl                            ! Number of turbine blades
 
 	!Outputs
-    REAL(4), INTENT(OUT)    :: PitComIPCF (3)                      ! Filtered pitch angle of each rotor blade
+    REAL(4), INTENT(OUT)    :: PitComIPCF (3)                    ! Filtered pitch angle of each rotor blade
 
     !Local variables
     REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
