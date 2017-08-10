@@ -136,7 +136,8 @@ hold on
 plot(db.Time,db.Y_MErr)
 plot(db.Time,db.Y_ErrLPFFast)
 plot(db.Time,db.Y_ErrLPFSlow)
-legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+plot(db.Time,rad2deg(avrSWAP(:,37)))
+legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
 
 figure
 title('Integral of fast yaw error')
@@ -158,7 +159,7 @@ figure
 title('YawTorque')
 hold on
 grid on
-plot(avrTime,avrSWAP(41))
+plot(avrTime,avrSWAP(:,41))
 legend('YawTorque')
 
 figure
