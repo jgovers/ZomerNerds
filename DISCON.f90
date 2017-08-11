@@ -48,20 +48,13 @@ REAL(4), SAVE                :: GenSpeedF                                       
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
-TYPE(IPC_InputType)          :: IPC_Input                                      ! Rotor azimuth angle [rad].
+TYPE(IPC_InputType)          :: IPC_Input                                      	! Structure for individual pitch control inputs
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, rad.
 REAL(4), SAVE                :: LastGenTrq                                      ! Commanded electrical generator torque the last time the controller was called, N-m.
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, sec.
 REAL(4), SAVE                :: LastTimeVS                                      ! Last time the torque controller was called, sec.
-REAL(4), PARAMETER           :: PC_KI         =       0.008068634               ! Integral gain for pitch controller at rated pitch (zero), (-).
-REAL(4), PARAMETER           :: PC_KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
-REAL(4), PARAMETER           :: PC_KP         =       0.01882681                ! Proportional gain for pitch controller at rated pitch (zero), sec.
-REAL(4), PARAMETER           :: PC_MaxPit     =       1.570796                  ! Maximum pitch setting in pitch controller, rad.
-REAL(4), PARAMETER           :: PC_MaxRat     =       0.1396263                 ! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
-REAL(4)                      :: PC_MinPit                                       ! Minimum pitch setting in pitch controller, rad.
-REAL(4), PARAMETER           :: PC_RefSpd     =     122.9096                    ! Desired (reference) HSS speed for pitch controller, rad/s.
-REAL(4)                      :: PC_SetPnt
+TYPE(PC_InputType)			 :: PC												! Structure for collective pitch control inputs
 REAL(4), SAVE                :: PitCom    (3)                                   ! Commanded pitch of each blade the last time the controller was called, rad.
 REAL(4)                      :: PitComI                                         ! Integral term of command pitch, rad.
 REAL(4)                      :: PitComP                                         ! Proportional term of command pitch, rad.
@@ -110,7 +103,7 @@ INTEGER(4), PARAMETER        :: Un            = 87                              
 INTEGER(4), PARAMETER        :: UnUser        = 88                              ! I/O unit for user defined parameter file
 INTEGER(4), PARAMETER        :: YawControl    = 0
 
-LOGICAL(1), PARAMETER        :: PC_DbgOut     = .TRUE.                          ! Flag to indicate whether to output debugging information
+LOGICAL(1), PARAMETER        :: DbgOut     = .TRUE.                          	! Flag to indicate whether to output debugging information
 
 CHARACTER(   1), PARAMETER   :: Tab           = CHAR( 9 )                       ! The tab character.
 CHARACTER(  25), PARAMETER   :: FmtDat    = "(F8.3,99('"//Tab//"',ES10.3E2,:))" ! The format of the debugging data
@@ -142,11 +135,18 @@ BlPitch  (3) =       avrSWAP(34)
 DT           =       avrSWAP( 3)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
-PC_MinPit    =       avrSWAP( 6)
-PC_SetPnt    =       avrSWAP( 5)
-
 Time         =       avrSWAP( 2)
 Y_MErr       =       avrSWAP(24)
+
+! Collective pitch control input parameters
+PC%KI         =       0.008068634               ! Integral gain for pitch controller at rated pitch (zero), (-).
+PC%KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
+PC%KP         =       0.01882681                ! Proportional gain for pitch controller at rated pitch (zero), sec.
+PC%MaxPit     =       1.570796                  ! Maximum pitch setting in pitch controller, rad.
+PC%MaxRat     =       0.1396263                 ! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
+PC%MinPit     =		  avrSWAP( 6)               ! Minimum pitch setting in pitch controller, rad.
+PC%RefSpd     =       122.9096                  ! Desired (reference) HSS speed for pitch controller, rad/s.
+PC%SetPnt	  =		  avrSWAP( 5)
 
 ! IPC input parameters
 IPC_Input%aziAngle		=       avrSWAP(60)
@@ -270,36 +270,36 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
       ErrMsg  = 'VS_RtPwr/VS_RtGnSp must not be greater than VS_MaxTq.'
    ENDIF
 
-   IF ( PC_KI     <= 0.0 )  THEN
+   IF ( PC%KI     <= 0.0 )  THEN
       aviFAIL = -1
-      ErrMsg  = 'PC_KI must be greater than zero.'
+      ErrMsg  = 'PC%KI must be greater than zero.'
    ENDIF
 
-   IF ( PC_KK     <= 0.0 )  THEN
+   IF ( PC%KK     <= 0.0 )  THEN
       aviFAIL = -1
-      ErrMsg  = 'PC_KK must be greater than zero.'
+      ErrMsg  = 'PC%KK must be greater than zero.'
    ENDIF
 
-   IF ( PC_RefSpd <= 0.0 )  THEN
+   IF ( PC%RefSpd <= 0.0 )  THEN
       aviFAIL = -1
-      ErrMsg  = 'PC_RefSpd must be greater than zero.'
+      ErrMsg  = 'PC%RefSpd must be greater than zero.'
    ENDIF
 
-   IF ( PC_MaxRat <= 0.0 )  THEN
+   IF ( PC%MaxRat <= 0.0 )  THEN
       aviFAIL = -1
-      ErrMsg  = 'PC_MaxRat must be greater than zero.'
+      ErrMsg  = 'PC%MaxRat must be greater than zero.'
    ENDIF
 
-   IF ( PC_MinPit >= PC_MaxPit )  THEN
+   IF ( PC%MinPit >= PC%MaxPit )  THEN
       aviFAIL = -1
-      ErrMsg  = 'PC_MinPit must be less than PC_MaxPit.'
+      ErrMsg  = 'PC%MinPit must be less than PC%MaxPit.'
    ENDIF
 
 
    ! If we're debugging the pitch controller, open the debug file and write the
    !   header:
 
-   IF ( PC_DbgOut )  THEN
+   IF ( DbgOut )  THEN
 
       OPEN ( UnDb, FILE=TRIM( RootName )//'.dbg', STATUS='REPLACE' )
 
@@ -331,8 +331,8 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
    ! NOTE: LastGenTrq, though SAVEd, is initialized in the torque controller
    !       below for simplicity, not here.
 
-   GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
-   IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+   GK         = 1.0/( 1.0 + PitCom(1)/PC%KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+   IntSpdErr  = PitCom(1)/( GK*PC%KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
    PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
    Y_AccErr   = 0.0
    Y_YawEndT  = -1.0
@@ -438,23 +438,23 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Compute the gain scheduling correction factor based on the previously
    !   commanded pitch angle for blade 1:
 
-      GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
+      GK = 1.0/( 1.0 + PitCom(1)/PC%KK )
 
 
    ! Compute the current speed error and its integral w.r.t. time; saturate the
    !   integral term using the pitch angle limits:
 
-      SpdErr    = GenSpeedF - PC_RefSpd                                 ! Current speed error
+      SpdErr    = GenSpeedF - PC%RefSpd                                 ! Current speed error
       IntSpdErr = IntSpdErr + SpdErr*ElapTime                           ! Current integral of speed error w.r.t. time
-      IntSpdErr = saturate(IntSpdErr,PC_SetPnt/( GK*PC_KI ),&
-											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
+      IntSpdErr = saturate(IntSpdErr,PC%SetPnt/( GK*PC%KI ),&
+											PC%MaxPit/( GK*PC%KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
    ! Compute the pitch commands associated with the proportional and integral
    !   gains:
 
-      PitComP   = GK*PC_KP*   SpdErr                                    ! Proportional term
-      PitComI   = GK*PC_KI*IntSpdErr                                    ! Integral term (saturated)
+      PitComP   = GK*PC%KP*   SpdErr                                    ! Proportional term
+      PitComI   = GK*PC%KI*IntSpdErr                                    ! Integral term (saturated)
 
 
    ! Superimpose the individual commands to get the total pitch command;
@@ -472,15 +472,15 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
       DO K = 1,NumBl ! Loop through all blades
 
          PitComT (K)  = PitComP + PitComI                    ! Overall command (unsaturated)
-         PitComT (K)  = saturate(PitComT(K),PC_SetPnt,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
+         PitComT (K)  = saturate(PitComT(K),PC%SetPnt,PC%MaxPit)				! Saturate the overall command using the pitch angle limits
          PitComT (K)  = PitComT(K) + PitComIPCF(K)
-         PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)
+         PitComT (K)  = saturate(PitComT(K),PC%MinPit,PC%MaxPit)
 
          PitRate(K) = ( PitComT(K) - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
-         PitRate(K) = saturate( PitRate(K), -1.0*PC_MaxRat, PC_MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
+         PitRate(K) = saturate( PitRate(K), -1.0*PC%MaxRat, PC%MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
          PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
-         PitCom (K) = saturate( PitCom(K), PC_MinPit, PC_MaxPit )			! Saturate the overall command using the pitch angle limits
+         PitCom (K) = saturate( PitCom(K), PC%MinPit, PC%MaxPit )			! Saturate the overall command using the pitch angle limits
 
       ENDDO          ! K - all blades
 
@@ -515,8 +515,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    ! Output debugging information if requested:
 
-      IF ( PC_DbgOut )  THEN
-                        WRITE (UnDb,FmtDat)  Time,			ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC_RefSpd, &
+      IF ( DbgOut )  THEN
+                        WRITE (UnDb,FmtDat)  Time,			ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC%RefSpd, &
                                              SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
                                              PitRate*R2D,								PitCom*R2D,														&
                                              BlPitch*R2D,								IPC_Input%rootMOOP,														&
@@ -535,7 +535,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
    avrSWAP(45) = PitCom(1) ! Use the command angle of blade 1 if using collective pitch
 
-      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
+      IF ( DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
 
 !=======================================================================
 
