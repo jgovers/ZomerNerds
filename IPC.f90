@@ -1,25 +1,26 @@
-SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi, zetaLP, zetaNotch, iStatus, NumBl, PitComIPCF)
+SUBROUTINE IPC(u, DT, iStatus, PitComIPCF)
 ! The individual pitch control module
 	USE Filters
+	USE DISCON_Types
 
     IMPLICIT NONE
 
     !Inputs
-	REAL(4), INTENT(IN)		:: aziAngle							! Rotor azimuth angle
-	REAL(4), INTENT(IN)     :: DT                               ! Time step
-	REAL(4), INTENT(IN)     :: KInter                           ! Gain for the integrator
-	REAL(4), INTENT(IN)     :: KNotch                           ! Gain for the notch filter
-	REAL(4), INTENT(IN)		:: omegaLP          				!phase offset added to the azimuth angle TODO: better description
-	REAL(4), INTENT(IN)		:: omegaNotch          				!phase offset added to the azimuth angle TODO: better description
-	REAL(4), INTENT(IN)		:: phi          					!phase offset added to the azimuth angle TODO: better description
-	REAL(4), INTENT(IN)		:: rootMOOP (3)                 	!root out of plane bending moments of each blade
-	REAL(4), INTENT(IN)		:: zetaLP       					!
-    REAL(4), INTENT(IN)		:: zetaNotch       					!
+    TYPE(IPC_InputType), INTENT(IN) :: u
+!	REAL(4), INTENT(IN)		:: aziAngle							! Rotor azimuth angle
+!	REAL(4), INTENT(IN)     :: KInter                           ! Gain for the integrator
+!	REAL(4), INTENT(IN)     :: KNotch                           ! Gain for the notch filter
+!	REAL(4), INTENT(IN)		:: omegaLP          				!phase offset added to the azimuth angle TODO: better description
+!	REAL(4), INTENT(IN)		:: omegaNotch          				!phase offset added to the azimuth angle TODO: better description
+!	REAL(4), INTENT(IN)		:: phi          					!phase offset added to the azimuth angle TODO: better description
+!	REAL(4), INTENT(IN)		:: rootMOOP (3)                 	!root out of plane bending moments of each blade
+!	REAL(4), INTENT(IN)		:: zetaLP       					!
+!    REAL(4), INTENT(IN)		:: zetaNotch       					!
+!    INTEGER, INTENT(IN)     :: NumBl                            ! Number of turbine blades
 
 	INTEGER, INTENT(IN)     :: iStatus                          ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
-    INTEGER                 :: inst                             ! Instance number, used to independently use the filter functions
-    INTEGER                 :: K                                ! Integer used to loop through turbine blades
-    INTEGER, INTENT(IN)     :: NumBl                            ! Number of turbine blades
+    REAL(4), INTENT(IN)     :: DT                               ! Time step
+
 
 	!Outputs
     REAL(4), INTENT(OUT)    :: PitComIPCF (3)                    ! Filtered pitch angle of each rotor blade
@@ -27,18 +28,20 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
     !Local variables
     REAL(4), PARAMETER		:: PI = 3.14159265359				!mathematical constant pi
     REAL(4)                 :: rootMOOPF (3), PitComIPC (3)
+    INTEGER                 :: inst                             ! Instance number, used to independently use the filter functions
+    INTEGER                 :: K                                ! Integer used to loop through turbine blades
 
     !Filter rootMOOPs
-    DO K = 1,NumBl
+    DO K = 1,u%NumBl
         inst = K        ! Instances 1-3 of the Notch Filter are reserved for this routine.
-        rootMOOPF(K) = rootMOOP(K)  !NotchFilter(rootMOOP(K), DT, KNotch, omegaNotch, zetaNotch, iStatus, inst)
+        rootMOOPF(K) = u%rootMOOP(K)  !NotchFilter(u%rootMOOP(K), DT, u%KNotch, u%omegaNotch, u%zetaNotch, iStatus, inst)
     END DO
 
-    CALL IPC_core(rootMOOPF, aziAngle, DT, KInter, phi, iStatus, PitComIPC)
+    CALL IPC_core(rootMOOPF, u%aziAngle, DT, u%KInter, u%phi, iStatus, PitComIPC)
 
-    DO K = 1,NumBl
+    DO K = 1,u%NumBl
         inst = K        ! Instances 1-3 of the Second order Low-Pass Filter are reserved for this routine.
-        PitComIPCF(K) = SecLPFilter(PitComIPC(K), DT, omegaLP, zetaLP, iStatus, inst)
+        PitComIPCF(K) = SecLPFilter(PitComIPC(K), DT, u%omegaLP, u%zetaLP, iStatus, inst)
     END DO
 
 CONTAINS
