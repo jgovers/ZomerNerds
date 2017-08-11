@@ -148,6 +148,7 @@ PC_SetPnt    =       avrSWAP( 5)
 Time         =       avrSWAP( 2)
 Y_MErr       =       avrSWAP(24)
 
+! IPC input parameters
 IPC_Input%aziAngle		=       avrSWAP(60)
 IPC_Input%KInter		=       0.0000000008
 IPC_Input%KNotch		=       1
@@ -194,17 +195,11 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
     ! Read user defined parameter file
 
     OPEN( UnUser, file=UserFile)
+	DO I = 120, 129
+		READ( UnUser, *) avrSWAP(I)
+    ENDDO
 
-    READ( UnUser, *) avrSWAP(120)
-    READ( UnUser, *) avrSWAP(121)
-    READ( UnUser, *) avrSWAP(122)
-    READ( UnUser, *) avrSWAP(123)
-    READ( UnUser, *) avrSWAP(124)
-    READ( UnUser, *) avrSWAP(125)
-    READ( UnUser, *) avrSWAP(126)
-    READ( UnUser, *) avrSWAP(127)
-    READ( UnUser, *) avrSWAP(128)
-    READ( UnUser, *) avrSWAP(129)
+    CLOSE(UnUser)
 
    ! Determine some torque control parameters not specified directly:
 
