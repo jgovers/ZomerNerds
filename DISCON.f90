@@ -190,17 +190,11 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
     ! Read user defined parameter file
 
     OPEN( UnUser, file=UserFile)
+    DO I = 120, 129
+        READ( UnUser, *) avrSWAP(I)
+    END DO
+    CLOSE(UnUser)
 
-    READ( UnUser, *) avrSWAP(120)
-    READ( UnUser, *) avrSWAP(121)
-    READ( UnUser, *) avrSWAP(122)
-    READ( UnUser, *) avrSWAP(123)
-    READ( UnUser, *) avrSWAP(124)
-    READ( UnUser, *) avrSWAP(125)
-    READ( UnUser, *) avrSWAP(126)
-    READ( UnUser, *) avrSWAP(127)
-    READ( UnUser, *) avrSWAP(128)
-    READ( UnUser, *) avrSWAP(129)
 
    ! Determine some torque control parameters not specified directly:
 
