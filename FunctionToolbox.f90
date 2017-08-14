@@ -11,7 +11,9 @@ CONTAINS
 
 		IMPLICIT NONE
 
-		REAL(4), INTENT(IN)		:: inputValue,minValue,maxValue
+		REAL(4), INTENT(IN)		:: inputValue
+		REAL(4), INTENT(IN)		:: minValue
+		REAL(4), INTENT(IN)		:: maxValue
 
 		saturate = MIN(MAX(inputValue,minValue),maxValue)
 
