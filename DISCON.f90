@@ -24,6 +24,12 @@ IMPLICIT                        NONE
 !GCC$ ATTRIBUTES DLLEXPORT :: DISCON
 #endif
 
+
+!------------------------------------------------------------------------------------------------------------------------------
+! Variable declaration and initialization
+!------------------------------------------------------------------------------------------------------------------------------
+
+
    ! Passed Variables:
 !REAL(C_FLOAT),          INTENT(IN   ) :: from_SC   (*)  ! DATA from the supercontroller
 !REAL(C_FLOAT),          INTENT(INOUT) :: to_SC     (*)  ! DATA to the supercontroller
@@ -113,7 +119,6 @@ INTEGER(4), PARAMETER        :: UnDb          = 85                              
 INTEGER(4), PARAMETER        :: UnDb2         = 86                              ! I/O unit for the debugging information
 INTEGER(4), PARAMETER        :: Un            = 87                              ! I/O unit for pack/unpack (checkpoint & restart)
 INTEGER(4), PARAMETER        :: UnUser        = 88                              ! I/O unit for user defined parameter file
-INTEGER(4), PARAMETER        :: YawControl    = 0
 
 LOGICAL(1), PARAMETER        :: PC_DbgOut     = .TRUE.                          ! Flag to indicate whether to output debugging information
 
@@ -128,13 +133,6 @@ CHARACTER(SIZE(avcMSG)-1)    :: ErrMsg                                          
 
    ! Load variables from calling program (See Appendix A of Bladed User's Guide):
 
-iStatus      = NINT( avrSWAP( 1) )
-NumBl        = NINT( avrSWAP(61) )
-
-!print *, 'from_sc: ', from_sc(1:4)
-!to_sc(1) = 5.0;
-!to_sc(2) = 2.0;
-
 BlPitch  (1) =       avrSWAP( 4)
 BlPitch  (2) =       avrSWAP(33)
 BlPitch  (3) =       avrSWAP(34)
@@ -142,6 +140,8 @@ DT           =       avrSWAP( 3)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
 IPC_aziAngle =       avrSWAP(60)
+iStatus      = NINT( avrSWAP( 1) )
+NumBl        = NINT( avrSWAP(61) )
 PC_MinPit    =       avrSWAP( 6)
 PC_SetPnt    =       avrSWAP( 5)
 rootMOOP (1) =       avrSWAP(30)
@@ -150,8 +150,9 @@ rootMOOP (3) =       avrSWAP(32)
 Time         =       avrSWAP( 2)
 Y_MErr       =       avrSWAP(24)
 
-
-avrSWAP(29)  =       YawControl
+!print *, 'from_sc: ', from_sc(1:4)
+!to_sc(1) = 5.0;
+!to_sc(2) = 2.0;
 
    ! Convert C character arrays to Fortran strings:
 
@@ -173,415 +174,431 @@ aviFAIL      = 0
 
 IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 
-   ! Inform users that we are using this user-defined routine:
+		! Inform users that we are using this user-defined routine:
 
-   aviFAIL  = 1
-   ErrMsg   = 'Running with torque and pitch control of the NREL offshore '// &
-              '5MW baseline wind turbine from DISCON.dll as written by J. '// &
-              'Jonkman of NREL/NWTC for use in the IEA Annex XXIII OC3 '   // &
-              'studies.'
+	aviFAIL  = 1
+	ErrMsg   = 'Running with torque and pitch control of the NREL offshore '// &
+			  '5MW baseline wind turbine from DISCON.dll as written by J. '// &
+			  'Jonkman of NREL/NWTC for use in the IEA Annex XXIII OC3 '   // &
+			  'studies.'
 
-    ! Read user defined parameter file
+		! Read user defined parameter file
 
-    OPEN( UnUser, file=UserFile)
-    DO I = 120, 129
-        READ( UnUser, *) avrSWAP(I)
-    END DO
-    CLOSE(UnUser)
-
-
-   ! Determine some torque control parameters not specified directly:
-
-   VS_SySp    = VS_RtGnSp/( 1.0 +  0.01*VS_SlPc )
-   VS_Slope15 = ( VS_Rgn2K*VS_Rgn2Sp*VS_Rgn2Sp )/( VS_Rgn2Sp - VS_CtInSp )
-   VS_Slope25 = ( VS_RtPwr/VS_RtGnSp           )/( VS_RtGnSp - VS_SySp   )
-   IF ( VS_Rgn2K == 0.0 )  THEN  ! .TRUE. if the Region 2 torque is flat, and thus, the denominator in the ELSE condition is zero
-      VS_TrGnSp = VS_SySp
-   ELSE                          ! .TRUE. if the Region 2 torque is quadratic with speed
-      VS_TrGnSp = ( VS_Slope25 - SQRT( VS_Slope25*( VS_Slope25 - 4.0*VS_Rgn2K*VS_SySp ) ) )/( 2.0*VS_Rgn2K )
-   ENDIF
+	OPEN( UnUser, file=UserFile)
+	DO I = 120, 129
+		READ( UnUser, *) avrSWAP(I)
+	END DO
+	CLOSE(UnUser)
 
 
-   ! Check validity of input parameters:
+		! Determine some torque control parameters not specified directly:
 
-   IF ( CornerFreq <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'CornerFreq must be greater than zero.'
-   ENDIF
-
-   IF ( DT     <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'DT must be greater than zero.'
-   ENDIF
-
-   IF ( VS_CtInSp <  0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'VS_CtInSp must not be negative.'
-   ENDIF
-
-   IF ( VS_Rgn2Sp <= VS_CtInSp )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'VS_Rgn2Sp must be greater than VS_CtInSp.'
-   ENDIF
-
-   IF ( VS_TrGnSp <  VS_Rgn2Sp )  THEN
-      aviFAIL = -1
-      ErrMsg = 'VS_TrGnSp must not be less than VS_Rgn2Sp.'
-   ENDIF
-
-   IF ( VS_SlPc   <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'VS_SlPc must be greater than zero.'
-   ENDIF
-
-   IF ( VS_MaxRat <= 0.0 )  THEN
-      aviFAIL =  -1
-      ErrMsg  = 'VS_MaxRat must be greater than zero.'
-   ENDIF
-
-   IF ( VS_RtPwr  <  0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'VS_RtPwr must not be negative.'
-   ENDIF
-
-   IF ( VS_Rgn2K  <  0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'VS_Rgn2K must not be negative.'
-   ENDIF
-
-   IF ( VS_Rgn2K*VS_RtGnSp*VS_RtGnSp > VS_RtPwr/VS_RtGnSp )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'VS_Rgn2K*VS_RtGnSp^2 must not be greater than VS_RtPwr/VS_RtGnSp.'
-   ENDIF
-
-   IF ( VS_MaxTq                     < VS_RtPwr/VS_RtGnSp )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'VS_RtPwr/VS_RtGnSp must not be greater than VS_MaxTq.'
-   ENDIF
-
-   IF ( PC_KI     <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'PC_KI must be greater than zero.'
-   ENDIF
-
-   IF ( PC_KK     <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'PC_KK must be greater than zero.'
-   ENDIF
-
-   IF ( PC_RefSpd <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'PC_RefSpd must be greater than zero.'
-   ENDIF
-
-   IF ( PC_MaxRat <= 0.0 )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'PC_MaxRat must be greater than zero.'
-   ENDIF
-
-   IF ( PC_MinPit >= PC_MaxPit )  THEN
-      aviFAIL = -1
-      ErrMsg  = 'PC_MinPit must be less than PC_MaxPit.'
-   ENDIF
+	VS_SySp    = VS_RtGnSp/( 1.0 +  0.01*VS_SlPc )
+	VS_Slope15 = ( VS_Rgn2K*VS_Rgn2Sp*VS_Rgn2Sp )/( VS_Rgn2Sp - VS_CtInSp )
+	VS_Slope25 = ( VS_RtPwr/VS_RtGnSp           )/( VS_RtGnSp - VS_SySp   )
+	IF ( VS_Rgn2K == 0.0 )  THEN  ! .TRUE. if the Region 2 torque is flat, and thus, the denominator in the ELSE condition is zero
+	  VS_TrGnSp = VS_SySp
+	ELSE                          ! .TRUE. if the Region 2 torque is quadratic with speed
+	  VS_TrGnSp = ( VS_Slope25 - SQRT( VS_Slope25*( VS_Slope25 - 4.0*VS_Rgn2K*VS_SySp ) ) )/( 2.0*VS_Rgn2K )
+	ENDIF
 
 
-   ! If we're debugging the pitch controller, open the debug file and write the
-   !   header:
+		! Check validity of input parameters:
 
-   IF ( PC_DbgOut )  THEN
+	IF ( CornerFreq <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'CornerFreq must be greater than zero.'
+	ENDIF
 
-      OPEN ( UnDb, FILE=TRIM( RootName )//'.dbg', STATUS='REPLACE' )
+	IF ( DT     <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'DT must be greater than zero.'
+	ENDIF
 
-      WRITE (UnDb,'(/////)')
-      WRITE (UnDb,'(A)')  'Time        '//Tab//'ElapTime    '//Tab//'HorWindV    '//Tab//'GenSpeed   '//Tab//'GenSpeedF  '//Tab//'RelSpdErr  '//Tab// &
-                          'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT1   '//Tab//'PitComT2   '//Tab//'PitComT3   '//Tab// &
-                          'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
-                          'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
-                          'IPC_PitComF1'//Tab//'IPC_PitComF2'//Tab//'IPC_PitComF3'//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-                          'Y_AccErr    '//Tab//'Y_YawEndT   '
+	IF ( VS_CtInSp <  0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_CtInSp must not be negative.'
+	ENDIF
 
-      WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
-                          '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
-                          '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg*s)     '//Tab//'(sec)       '
+	IF ( VS_Rgn2Sp <= VS_CtInSp )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_Rgn2Sp must be greater than VS_CtInSp.'
+	ENDIF
 
-      OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
-      WRITE (UnDb2,'(/////)')
+	IF ( VS_TrGnSp <  VS_Rgn2Sp )  THEN
+	  aviFAIL = -1
+	  ErrMsg = 'VS_TrGnSp must not be less than VS_Rgn2Sp.'
+	ENDIF
 
-      WRITE (UnDb2,'(A,85("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,85)
-      WRITE (UnDb2,'(A,85("'//Tab//'(-)"))')  '(s)'
+	IF ( VS_SlPc   <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_SlPc must be greater than zero.'
+	ENDIF
 
-   ENDIF
+	IF ( VS_MaxRat <= 0.0 )  THEN
+	  aviFAIL =  -1
+	  ErrMsg  = 'VS_MaxRat must be greater than zero.'
+	ENDIF
+
+	IF ( VS_RtPwr  <  0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_RtPwr must not be negative.'
+	ENDIF
+
+	IF ( VS_Rgn2K  <  0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_Rgn2K must not be negative.'
+	ENDIF
+
+	IF ( VS_Rgn2K*VS_RtGnSp*VS_RtGnSp > VS_RtPwr/VS_RtGnSp )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_Rgn2K*VS_RtGnSp^2 must not be greater than VS_RtPwr/VS_RtGnSp.'
+	ENDIF
+
+	IF ( VS_MaxTq                     < VS_RtPwr/VS_RtGnSp )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_RtPwr/VS_RtGnSp must not be greater than VS_MaxTq.'
+	ENDIF
+
+	IF ( PC_KI     <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'PC_KI must be greater than zero.'
+	ENDIF
+
+	IF ( PC_KK     <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'PC_KK must be greater than zero.'
+	ENDIF
+
+	IF ( PC_RefSpd <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'PC_RefSpd must be greater than zero.'
+	ENDIF
+
+	IF ( PC_MaxRat <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'PC_MaxRat must be greater than zero.'
+	ENDIF
+
+	IF ( PC_MinPit >= PC_MaxPit )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'PC_MinPit must be less than PC_MaxPit.'
+	ENDIF
 
 
-   ! Initialize the SAVEd variables:
-   ! NOTE: LastGenTrq, though SAVEd, is initialized in the torque controller
-   !       below for simplicity, not here.
+		! If we're debugging the pitch controller, open the debug file and write the
+		!   header:
 
-   GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
-   IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
-   PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
-   Y_AccErr   = 0.0
-   Y_YawEndT  = -1.0
+	IF ( PC_DbgOut )  THEN
 
-   LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
-   LastTimePC = Time - DT                       ! This will ensure that the pitch  controller is called on the first pass
-   LastTimeVS = Time - DT                       ! This will ensure that the torque controller is called on the first pass
+	  OPEN ( UnDb, FILE=TRIM( RootName )//'.dbg', STATUS='REPLACE' )
+
+		WRITE (UnDb,'(/////)')
+		WRITE (UnDb,'(A)')  'Time        '//Tab//'ElapTime    '//Tab//'HorWindV    '//Tab//'GenSpeed   '//Tab//'GenSpeedF  '//Tab//'RelSpdErr  '//Tab// &
+						  'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT1   '//Tab//'PitComT2   '//Tab//'PitComT3   '//Tab// &
+						  'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
+						  'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
+						  'IPC_PitComF1'//Tab//'IPC_PitComF2'//Tab//'IPC_PitComF3'//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
+						  'Y_AccErr    '//Tab//'Y_YawEndT   '
+
+		WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
+						  '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
+						  '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
+						  '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
+						  '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
+						  '(deg*s)     '//Tab//'(sec)       '
+
+		OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
+		WRITE (UnDb2,'(/////)')
+
+		WRITE (UnDb2,'(A,85("'//Tab//'AvrSWAP(",I2,")"))')  'Time ', (i,i=1,85)
+		WRITE (UnDb2,'(A,85("'//Tab//'(-)"))')  '(s)'
+
+	ENDIF
+
+
+		! Initialize the SAVEd variables:
+		! NOTE: LastGenTrq, though SAVEd, is initialized in the torque controller
+		!       below for simplicity, not here.
+
+	GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+	IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+	PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
+	Y_AccErr   = 0.0
+	Y_YawEndT  = -1.0
+
+	LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
+	LastTimePC = Time - DT                       ! This will ensure that the pitch  controller is called on the first pass
+	LastTimeVS = Time - DT                       ! This will ensure that the torque controller is called on the first pass
 
 ENDIF
 
-!=======================================================================
 
-   ! MAIN CONTROL CALCULATIONS
-
-IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control calculations if no error has occured and we are not on the last time step
-
+!------------------------------------------------------------------------------------------------------------------------------
+! Main control calculations
+!------------------------------------------------------------------------------------------------------------------------------
 
 
-   ! Abort if the user has not requested a pitch angle actuator (See Appendix A
-   !   of Bladed User's Guide):
-
-   IF ( NINT(avrSWAP(10)) /= 0 )  THEN ! .TRUE. if a pitch angle actuator hasn't been requested
-      aviFAIL = -1
-      ErrMsg  = 'Pitch angle actuator not requested.'
-   ENDIF
+IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control calculations if no error has occurred and we are not on the last time step
 
 
-   ! Set unused outputs to zero (See Appendix A of Bladed User's Guide):
+		! Abort if the user has not requested a pitch angle actuator (See Appendix A
+		!   of Bladed User's Guide):
 
-   avrSWAP(36) = 0.0 ! Shaft brake status: 0=off
-   avrSWAP(41) = 0.0 ! Demanded yaw actuator torque
-   avrSWAP(46) = 0.0 ! Demanded pitch rate (Collective pitch)
-   avrSWAP(65) = 0.0 ! Number of variables returned for logging
-   avrSWAP(72) = 0.0 ! Generator start-up resistance
-   avrSWAP(79) = 0.0 ! Request for loads: 0=none
-   avrSWAP(80) = 0.0 ! Variable slip current status
-   avrSWAP(81) = 0.0 ! Variable slip current demand
-
-!=======================================================================
-
-    ! Filter the HSS (generator) speed measurement:
-    ! Apply Low-Pass Filter
-    GenSpeedF = LPFilter( GenSpeed, DT, CornerFreq, iStatus, 1)     ! This is the first instance of the LPFilter
-
-!=======================================================================
-
-   ! VARIABLE-SPEED TORQUE CONTROL:
-
-   ! Compute the elapsed time since the last call to the controller:
-
-   ElapTime = Time - LastTimeVS
-
-     ! Compute the generator torque, which depends on which region we are in:
-
-      IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
-         GenTrq = VS_RtTq/GenSpeedF
-      ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
-         GenTrq = 0.0
-      ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
-         GenTrq = VS_Slope15*( GenSpeedF - VS_CtInSp )
-      ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
-         GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
-      ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
-         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
-      ENDIF
+	IF ( NINT(avrSWAP(10)) /= 0 )  THEN ! .TRUE. if a pitch angle actuator hasn't been requested
+		aviFAIL = -1
+		ErrMsg  = 'Pitch angle actuator not requested.'
+	ENDIF
 
 
-   ! Saturate the commanded torque using the maximum torque limit:
+		! Set unused outputs to zero (See Appendix A of Bladed User's Guide):
 
-      GenTrq  = MIN( GenTrq                    , VS_MaxTq  )   ! Saturate the command using the maximum torque limit
+	avrSWAP(36) = 0.0 ! Shaft brake status: 0=off
+	avrSWAP(41) = 0.0 ! Demanded yaw actuator torque
+	avrSWAP(46) = 0.0 ! Demanded pitch rate (Collective pitch)
+	avrSWAP(65) = 0.0 ! Number of variables returned for logging
+	avrSWAP(72) = 0.0 ! Generator start-up resistance
+	avrSWAP(79) = 0.0 ! Request for loads: 0=none
+	avrSWAP(80) = 0.0 ! Variable slip current status
+	avrSWAP(81) = 0.0 ! Variable slip current demand
 
-
-   ! Saturate the commanded torque using the torque rate limit:
-
-      IF ( iStatus == 0 )  LastGenTrq = GenTrq                 ! Initialize the value of LastGenTrq on the first pass only
-      TrqRate = ( GenTrq - LastGenTrq )/ElapTime               ! Torque rate (unsaturated)
-      TrqRate = saturate(TrqRate,-VS_MaxRat,VS_MaxRat) 	   ! Saturate the torque rate using its maximum absolute value
-      GenTrq  = LastGenTrq + TrqRate*ElapTime                  ! Saturate the command using the torque rate limit
-
-
-   ! Reset the values of LastTimeVS and LastGenTrq to the current values:
-
-      LastTimeVS = Time
-      LastGenTrq = GenTrq
+		! Filter the HSS (generator) speed measurement:
+		! Apply Low-Pass Filter
+	GenSpeedF = LPFilter( GenSpeed, DT, CornerFreq, iStatus, 1)     ! This is the first instance of LPFilter
 
 
-   ! Set the generator contactor status, avrSWAP(35), to main (high speed)
-   !   variable-speed generator, the torque override to yes, and command the
-   !   generator torque (See Appendix A of Bladed User's Guide):
-
-   avrSWAP(35) = 1.0          ! Generator contactor status: 1=main (high speed) variable-speed generator
-   avrSWAP(56) = 0.0          ! Torque override: 0=yes
-   avrSWAP(47) = LastGenTrq   ! Demanded generator torque
-
-!=======================================================================
-
-   ! PITCH CONTROL:
-
-   ! Compute the elapsed time since the last call to the controller:
-
-   ElapTime = Time - LastTimePC
-
-   ! Compute the gain scheduling correction factor based on the previously
-   !   commanded pitch angle for blade 1:
-
-      GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
+	!..............................................................................................................................
+	! VARIABLE-SPEED TORQUE CONTROL:
+	!..............................................................................................................................
 
 
-   ! Compute the current speed error and its integral w.r.t. time; saturate the
-   !   integral term using the pitch angle limits:
+		! Compute the elapsed time since the last call to the controller:
 
-      SpdErr    = GenSpeedF - PC_RefSpd                                 ! Current speed error
-      IntSpdErr = IntSpdErr + SpdErr*ElapTime                           ! Current integral of speed error w.r.t. time
-      IntSpdErr = saturate(IntSpdErr,PC_SetPnt/( GK*PC_KI ),&
+	ElapTime = Time - LastTimeVS
+
+		! Compute the generator torque, which depends on which region we are in:
+
+	IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
+		GenTrq = VS_RtTq/GenSpeedF
+	ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
+		GenTrq = 0.0
+	ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
+		GenTrq = VS_Slope15*( GenSpeedF - VS_CtInSp )
+	ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
+		GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
+	ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
+		GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
+	ENDIF
+
+
+		! Saturate the commanded torque using the maximum torque limit:
+
+	GenTrq  = MIN( GenTrq , VS_MaxTq  )						! Saturate the command using the maximum torque limit
+
+
+		! Saturate the commanded torque using the torque rate limit:
+
+	IF ( iStatus == 0 )  LastGenTrq = GenTrq				! Initialize the value of LastGenTrq on the first pass only
+	TrqRate = ( GenTrq - LastGenTrq )/ElapTime				! Torque rate (unsaturated)
+	TrqRate = saturate(TrqRate,-VS_MaxRat,VS_MaxRat)		! Saturate the torque rate using its maximum absolute value
+	GenTrq  = LastGenTrq + TrqRate*ElapTime					! Saturate the command using the torque rate limit
+
+
+		! Reset the values of LastTimeVS and LastGenTrq to the current values:
+
+	LastTimeVS = Time
+	LastGenTrq = GenTrq
+
+
+		! Set the generator contactor status, avrSWAP(35), to main (high speed)
+		!   variable-speed generator, the torque override to yes, and command the
+		!   generator torque (See Appendix A of Bladed User's Guide):
+
+	avrSWAP(35) = 1.0          ! Generator contactor status: 1=main (high speed) variable-speed generator
+	avrSWAP(56) = 0.0          ! Torque override: 0=yes
+	avrSWAP(47) = LastGenTrq   ! Demanded generator torque
+
+
+	!..............................................................................................................................
+	! Pitch control
+	!..............................................................................................................................
+
+
+		! Compute the elapsed time since the last call to the controller:
+
+	ElapTime = Time - LastTimePC
+
+		! Compute the gain scheduling correction factor based on the previously
+		!   commanded pitch angle for blade 1:
+
+	GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
+
+
+		! Compute the current speed error and its integral w.r.t. time; saturate the
+		!   integral term using the pitch angle limits:
+
+	SpdErr    = GenSpeedF - PC_RefSpd									! Current speed error
+	IntSpdErr = IntSpdErr + SpdErr*ElapTime								! Current integral of speed error w.r.t. time
+	IntSpdErr = saturate(IntSpdErr,PC_SetPnt/( GK*PC_KI ),&
 											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
-   ! Compute the pitch commands associated with the proportional and integral
-   !   gains:
+		! Compute the pitch commands associated with the proportional and integral
+		!   gains:
 
-      PitComP   = GK*PC_KP*   SpdErr                                    ! Proportional term
-      PitComI   = GK*PC_KI*IntSpdErr                                    ! Integral term (saturated)
-
-
-   ! Superimpose the individual commands to get the total pitch command;
-   !   saturate the overall command using the pitch angle limits:
-
-      CALL IPC(rootMOOP, IPC_aziAngle, DT, IPC_KInter, IPC_KNotch, IPC_omegaLP, IPC_omegaNotch, IPC_phi, IPC_zetaLP, IPC_zetaNotch, iStatus, NumBl, IPC_PitComF)
-
-   ! Saturate the overall commanded pitch using the pitch rate limit:
-   ! NOTE: Since the current pitch angle may be different for each blade
-   !       (depending on the type of actuator implemented in the structural
-   !       dynamics model), this pitch rate limit calculation and the
-   !       resulting overall pitch angle command may be different for each
-   !       blade.
-
-      DO K = 1,NumBl ! Loop through all blades
-
-         PitComT (K)  = PitComP + PitComI                    ! Overall command (unsaturated)
-         PitComT (K)  = saturate(PitComT(K),PC_SetPnt,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
-         PitComT (K)  = PitComT(K) + IPC_PitComF(K)
-         PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)
-
-         PitRate(K) = ( PitComT(K) - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
-         PitRate(K) = saturate( PitRate(K), -1.0*PC_MaxRat, PC_MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
-         PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
-
-         PitCom (K) = saturate( PitCom(K), PC_MinPit, PC_MaxPit )			! Saturate the overall command using the pitch angle limits
-
-      ENDDO          ! K - all blades
-
-!=======================================================================
-
-    ! YAW CONTROL:
-    IF ( Y_YawEndT <= Time) THEN
-
-        avrSWAP(48) = 0.0
-
-        Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
-        Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
-
-        Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
-
-        IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
-            Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
-        END IF
-    ELSE
-        avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
-        Y_ErrLPFFast    = 0.0
-        Y_ErrLPFSlow    = 0.0
-        Y_AccErr        = 0.0
-    END IF
-
-!=======================================================================
-
-   ! Reset the value of LastTimePC to the current value:
-
-      LastTimePC = Time
+	PitComP   = GK*PC_KP*   SpdErr										! Proportional term
+	PitComI   = GK*PC_KI*IntSpdErr										! Integral term (saturated)
 
 
-   ! Output debugging information if requested:
+		! Individual pitch control
 
-      IF ( PC_DbgOut )  THEN
-                        WRITE (UnDb,FmtDat)  Time,			ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC_RefSpd, &
-                                             SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
-                                             PitRate*R2D,								PitCom*R2D,														&
-                                             BlPitch*R2D,								rootMOOP,														&
-                                             IPC_PitComF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
-                                             Y_AccErr*R2D,  Y_YawEndT
-      END IF
+	CALL IPC(rootMOOP, IPC_aziAngle, DT, IPC_KInter, IPC_KNotch, IPC_omegaLP, IPC_omegaNotch, IPC_phi, IPC_zetaLP, IPC_zetaNotch, iStatus, NumBl, IPC_PitComF)
 
-   ! Set the pitch override to yes and command the pitch demanded from the last
-   !   call to the controller (See Appendix A of Bladed User's Guide):
+		! Superimpose the individual commands to get the total pitch command;
+		!   saturate the overall command using the pitch angle limits:
 
-   avrSWAP(55) = 0.0       ! Pitch override: 0=yes
+		! Saturate the overall commanded pitch using the pitch rate limit:
+		! NOTE: Since the current pitch angle may be different for each blade
+		!       (depending on the type of actuator implemented in the structural
+		!       dynamics model), this pitch rate limit calculation and the
+		!       resulting overall pitch angle command may be different for each
+		!       blade.
 
-   avrSWAP(42) = PitCom(1) ! Use the command angles of all blades if using individual pitch
-   avrSWAP(43) = PitCom(2) ! "
-   avrSWAP(44) = PitCom(3) ! "
+	DO K = 1,NumBl ! Loop through all blades
 
-   avrSWAP(45) = PitCom(1) ! Use the command angle of blade 1 if using collective pitch
+		 PitComT (K)  = PitComP + PitComI                    ! Overall command (unsaturated)
+		 PitComT (K)  = saturate(PitComT(K),PC_SetPnt,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
+		 PitComT (K)  = PitComT(K) + IPC_PitComF(K)
+		 PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)
 
-      IF ( PC_DbgOut )  WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
+		 PitRate(K) = ( PitComT(K) - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
+		 PitRate(K) = saturate( PitRate(K), -1.0*PC_MaxRat, PC_MaxRat )		! Saturate the pitch rate of blade K using its maximum absolute value
+		 PitCom (K) = BlPitch(K) + PitRate(K)*ElapTime                  ! Saturate the overall command of blade K using the pitch rate limit
 
-!=======================================================================
+		 PitCom (K) = saturate( PitCom(K), PC_MinPit, PC_MaxPit )			! Saturate the overall command using the pitch angle limits
 
-   ! Reset the value of LastTime to the current value:
+	ENDDO
 
-   LastTime = Time
+		! Set the pitch override to yes and command the pitch demanded from the last
+		!   call to the controller (See Appendix A of Bladed User's Guide):
+
+	avrSWAP(55) = 0.0       ! Pitch override: 0=yes
+
+	avrSWAP(42) = PitCom(1) ! Use the command angles of all blades if using individual pitch
+	avrSWAP(43) = PitCom(2) ! "
+	avrSWAP(44) = PitCom(3) ! "
+
+	avrSWAP(45) = PitCom(1) ! Use the command angle of blade 1 if using collective pitch
+
+		! Reset the value of LastTimePC to the current value:
+
+	  LastTimePC = Time
+
+
+	!..............................................................................................................................
+	! Yaw control
+	!..............................................................................................................................
+
+
+	IF ( Y_YawEndT <= Time) THEN
+
+		avrSWAP(48) = 0.0
+
+		Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
+		Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
+
+		Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
+
+		IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
+			Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
+		END IF
+	ELSE
+		avrSWAP(29)		= 0													! Yaw control parameter: 0 = yaw rate control
+		avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
+		Y_ErrLPFFast    = 0.0
+		Y_ErrLPFSlow    = 0.0
+		Y_AccErr        = 0.0
+	END IF
+
+
+	!..............................................................................................................................
+
+
+		! Output debugging information if requested:
+
+	IF ( PC_DbgOut )  THEN
+		WRITE (UnDb,FmtDat)  Time,			ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC_RefSpd, &
+							 SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
+							 PitRate*R2D,								PitCom*R2D,														&
+							 BlPitch*R2D,								rootMOOP,														&
+							 IPC_PitComF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
+							 Y_AccErr*R2D,  Y_YawEndT
+
+		WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
+	END IF
+
+
+	!..............................................................................................................................
+
+
+		! Reset the value of LastTime to the current value:
+
+	LastTime = Time
+
+
+!------------------------------------------------------------------------------------------------------------------------------
+
 
 ELSEIF ( iStatus == -8 )  THEN
-   ! pack
-   OPEN( Un, FILE=TRIM( InFile ), STATUS='UNKNOWN', FORM='UNFORMATTED' , ACCESS='STREAM', IOSTAT=ErrStat, ACTION='WRITE' )
+		! pack
+	OPEN( Un, FILE=TRIM( InFile ), STATUS='UNKNOWN', FORM='UNFORMATTED' , ACCESS='STREAM', IOSTAT=ErrStat, ACTION='WRITE' )
 
-   IF ( ErrStat /= 0 ) THEN
-      ErrMsg  = 'Cannot open file "'//TRIM( InFile )//'". Another program may have locked it for writing.'
-      aviFAIL = -1
-   ELSE
+	IF ( ErrStat /= 0 ) THEN
+		ErrMsg  = 'Cannot open file "'//TRIM( InFile )//'". Another program may have locked it for writing.'
+		aviFAIL = -1
+	ELSE
 
-      ! write all static variables to the checkpoint file (inverse of unpack):
-      WRITE( Un, IOSTAT=ErrStat ) GenSpeedF               ! Filtered HSS (generator) speed, rad/s.
-      WRITE( Un, IOSTAT=ErrStat ) IntSpdErr               ! Current integral of speed error w.r.t. time, rad.
-      WRITE( Un, IOSTAT=ErrStat ) LastGenTrq              ! Commanded electrical generator torque the last time the controller was called, N-m.
-      WRITE( Un, IOSTAT=ErrStat ) LastTime                ! Last time this DLL was called, sec.
-      WRITE( Un, IOSTAT=ErrStat ) LastTimePC              ! Last time the pitch  controller was called, sec.
-      WRITE( Un, IOSTAT=ErrStat ) LastTimeVS              ! Last time the torque controller was called, sec.
-      WRITE( Un, IOSTAT=ErrStat ) PitCom                  ! Commanded pitch of each blade the last time the controller was called, rad.
-      WRITE( Un, IOSTAT=ErrStat ) VS_Slope15              ! Torque/speed slope of region 1 1/2 cut-in torque ramp , N-m/(rad/s).
-      WRITE( Un, IOSTAT=ErrStat ) VS_Slope25              ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
-      WRITE( Un, IOSTAT=ErrStat ) VS_SySp                 ! Synchronous speed of region 2 1/2 induction generator, rad/s.
-      WRITE( Un, IOSTAT=ErrStat ) VS_TrGnSp               ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
+			! write all static variables to the checkpoint file (inverse of unpack):
+		WRITE( Un, IOSTAT=ErrStat ) GenSpeedF               ! Filtered HSS (generator) speed, rad/s.
+		WRITE( Un, IOSTAT=ErrStat ) IntSpdErr               ! Current integral of speed error w.r.t. time, rad.
+		WRITE( Un, IOSTAT=ErrStat ) LastGenTrq              ! Commanded electrical generator torque the last time the controller was called, N-m.
+		WRITE( Un, IOSTAT=ErrStat ) LastTime                ! Last time this DLL was called, sec.
+		WRITE( Un, IOSTAT=ErrStat ) LastTimePC              ! Last time the pitch  controller was called, sec.
+		WRITE( Un, IOSTAT=ErrStat ) LastTimeVS              ! Last time the torque controller was called, sec.
+		WRITE( Un, IOSTAT=ErrStat ) PitCom                  ! Commanded pitch of each blade the last time the controller was called, rad.
+		WRITE( Un, IOSTAT=ErrStat ) VS_Slope15              ! Torque/speed slope of region 1 1/2 cut-in torque ramp , N-m/(rad/s).
+		WRITE( Un, IOSTAT=ErrStat ) VS_Slope25              ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
+		WRITE( Un, IOSTAT=ErrStat ) VS_SySp                 ! Synchronous speed of region 2 1/2 induction generator, rad/s.
+		WRITE( Un, IOSTAT=ErrStat ) VS_TrGnSp               ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
 
-      CLOSE ( Un )
+		CLOSE ( Un )
 
-   END IF
+	END IF
 
 ELSEIF( iStatus == -9 ) THEN
-   !unpack
-   OPEN( Un, FILE=TRIM( InFile ), STATUS='OLD', FORM='UNFORMATTED', ACCESS='STREAM', IOSTAT=ErrStat, ACTION='READ' )
+		!unpack
+	OPEN( Un, FILE=TRIM( InFile ), STATUS='OLD', FORM='UNFORMATTED', ACCESS='STREAM', IOSTAT=ErrStat, ACTION='READ' )
 
-   IF ( ErrStat /= 0 ) THEN
-      aviFAIL = -1
-      ErrMsg  = ' Cannot open file "'//TRIM( InFile )//'" for reading. Another program may have locked.'
-   ELSE
+	IF ( ErrStat /= 0 ) THEN
+		aviFAIL = -1
+		ErrMsg  = ' Cannot open file "'//TRIM( InFile )//'" for reading. Another program may have locked.'
+	ELSE
 
-      ! READ all static variables from the restart file (inverse of pack):
-      READ( Un, IOSTAT=ErrStat ) GenSpeedF               ! Filtered HSS (generator) speed, rad/s.
-      READ( Un, IOSTAT=ErrStat ) IntSpdErr               ! Current integral of speed error w.r.t. time, rad.
-      READ( Un, IOSTAT=ErrStat ) LastGenTrq              ! Commanded electrical generator torque the last time the controller was called, N-m.
-      READ( Un, IOSTAT=ErrStat ) LastTime                ! Last time this DLL was called, sec.
-      READ( Un, IOSTAT=ErrStat ) LastTimePC              ! Last time the pitch  controller was called, sec.
-      READ( Un, IOSTAT=ErrStat ) LastTimeVS              ! Last time the torque controller was called, sec.
-      READ( Un, IOSTAT=ErrStat ) PitCom                  ! Commanded pitch of each blade the last time the controller was called, rad.
-      READ( Un, IOSTAT=ErrStat ) VS_Slope15              ! Torque/speed slope of region 1 1/2 cut-in torque ramp , N-m/(rad/s).
-      READ( Un, IOSTAT=ErrStat ) VS_Slope25              ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
-      READ( Un, IOSTAT=ErrStat ) VS_SySp                 ! Synchronous speed of region 2 1/2 induction generator, rad/s.
-      READ( Un, IOSTAT=ErrStat ) VS_TrGnSp               ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
+			! READ all static variables from the restart file (inverse of pack):
+		READ( Un, IOSTAT=ErrStat ) GenSpeedF               ! Filtered HSS (generator) speed, rad/s.
+		READ( Un, IOSTAT=ErrStat ) IntSpdErr               ! Current integral of speed error w.r.t. time, rad.
+		READ( Un, IOSTAT=ErrStat ) LastGenTrq              ! Commanded electrical generator torque the last time the controller was called, N-m.
+		READ( Un, IOSTAT=ErrStat ) LastTime                ! Last time this DLL was called, sec.
+		READ( Un, IOSTAT=ErrStat ) LastTimePC              ! Last time the pitch  controller was called, sec.
+		READ( Un, IOSTAT=ErrStat ) LastTimeVS              ! Last time the torque controller was called, sec.
+		READ( Un, IOSTAT=ErrStat ) PitCom                  ! Commanded pitch of each blade the last time the controller was called, rad.
+		READ( Un, IOSTAT=ErrStat ) VS_Slope15              ! Torque/speed slope of region 1 1/2 cut-in torque ramp , N-m/(rad/s).
+		READ( Un, IOSTAT=ErrStat ) VS_Slope25              ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
+		READ( Un, IOSTAT=ErrStat ) VS_SySp                 ! Synchronous speed of region 2 1/2 induction generator, rad/s.
+		READ( Un, IOSTAT=ErrStat ) VS_TrGnSp               ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
 
-      CLOSE ( Un )
-   ENDIF
+		CLOSE ( Un )
+	ENDIF
 
 
 ENDIF
