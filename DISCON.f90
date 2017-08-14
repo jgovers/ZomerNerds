@@ -47,6 +47,7 @@ REAL(4)                      :: GenSpeed                                        
 REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed [rad/s].
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                   :: GenTrq_Reg        ! Temporary debug variable to show which GenTrq region is active
+REAL(4)                   :: P_enabled
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, rad.
@@ -318,14 +319,14 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
                           'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-                          'Y_AccErr    '//Tab//'YawTest     '//Tab//'Y_YawEndT   '//Tab//'GenTrq_Reg '
+                          'Y_AccErr    '//Tab//'YawTest     '//Tab//'Y_YawEndT   '//Tab//'GenTrq_Reg '//Tab//'P_enabled   '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
                           '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
                           '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-                          '(deg*s)     '//Tab//'(deg/s)     '//Tab//'(sec)       '//Tab//'(-)        '
+                          '(deg*s)     '//Tab//'(deg/s)     '//Tab//'(sec)       '//Tab//'(-)        '//Tab//'(-)        '
 
       OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
       WRITE (UnDb2,'(/////)')
@@ -458,8 +459,10 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 	  IF (GenTrq >= VS_RtTq99) THEN
 		  PC_VarMaxPit = PC_MaxPit
+		  P_enabled = 1
 	  ELSE
 		  PC_VarMaxPit = PC_SetPnt
+		  P_enabled = 0
 	  END IF
 
 !	PC_VarMaxPit = PC_MaxPit
@@ -547,7 +550,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              PitRate*R2D,								PitCom*R2D,														&
                                              BlPitch*R2D,								rootMOOP,														&
                                              PitComIPCF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
-                                             Y_AccErr*R2D,	YawTest*R2D,	Y_YawEndT,  GenTrq_Reg
+                                             Y_AccErr*R2D,	YawTest*R2D,	Y_YawEndT,  GenTrq_Reg,     P_enabled
       END IF
 
    ! Set the pitch override to yes and command the pitch demanded from the last
