@@ -6,7 +6,7 @@ clc
 %% Settings
 timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
-runCmdFromHere = true;          % Run the CompileRunAndDebug.cmd file from this matlab script
+runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
 %% Loading
@@ -95,7 +95,7 @@ legend('rootMOOP1')
 figure
 title('PitComIPC')
 hold on
-plot(db.Time,db.PitComIPCF1)
+plot(db.Time,db.IPC_PitComF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
 legend('PitComIPCF1')
