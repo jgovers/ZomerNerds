@@ -7,7 +7,7 @@ C:
 :: Run
 cd C:\FAST\CertTest
 echo on
-FAST_Win32.exe Test18.SL.fst
+FAST_Win64.exe Test18.SL.fst
 
 :: Make new folder with correct timestamp
 echo off
