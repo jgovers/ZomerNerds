@@ -38,7 +38,6 @@ CHARACTER(KIND=C_CHAR), INTENT(INOUT) :: avcMSG    (NINT(avrSWAP(49)))  ! MESSAG
 
    ! Local Variables:
 
-REAL(4)                      :: aziAngle                                        ! Rotor azimuth angle [rad].
 REAL(4)                      :: BlPitch   (3)                                   ! Current values of the blade pitch angles [rad].
 REAL(4), PARAMETER           :: CornerFreq    =      0.7853981                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter [rad/s]. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1 [Hz] = 0.25 [Hz] = 1.570796 [rad/s]).
 REAL(4)                      :: DT                                              ! Time step [s].
@@ -48,9 +47,16 @@ REAL(4)                      :: GenSpeedF                                       
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
+REAL(4)                      :: IPC_aziAngle                                        ! Rotor azimuth angle [rad].
+REAL(4), PARAMETER           :: IPC_KInter      =       0.0000000008
+REAL(4), PARAMETER           :: IPC_KNotch      =       1
+REAL(4), PARAMETER           :: IPC_omegaLP     =       1000.0
+REAL(4), PARAMETER           :: IPC_omegaNotch  =       1.269330365
+REAL(4), PARAMETER           :: IPC_phi         =       0.436332313
+REAL(4)                      :: IPC_PitComF (3)
+REAL(4), PARAMETER           :: IPC_zetaLP      =       1.0
+REAL(4), PARAMETER           :: IPC_zetaNotch   =       0.5
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, rad.
-REAL(4), PARAMETER           :: KInter        =       0.0000000008
-REAL(4), PARAMETER           :: KNotch        =       1
 REAL(4), SAVE                :: LastGenTrq                                      ! Commanded electrical generator torque the last time the controller was called, N-m.
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, sec.
@@ -61,17 +67,12 @@ REAL(4), PARAMETER           :: PC_KP         =       0.01882681                
 REAL(4), PARAMETER           :: PC_MaxPit     =       1.570796                  ! Maximum pitch setting in pitch controller, rad.
 REAL(4), PARAMETER           :: PC_MaxRat     =       0.1396263                 ! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
 REAL(4)                      :: PC_MinPit                                       ! Minimum pitch setting in pitch controller, rad.
-REAL(4), PARAMETER           :: PC_omegaLP    =    1000.0
-REAL(4), PARAMETER           :: PC_omegaNotch =       1.269330365
 REAL(4), PARAMETER           :: PC_RefSpd     =     122.9096                    ! Desired (reference) HSS speed for pitch controller, rad/s.
 REAL(4)                      :: PC_SetPnt
-REAL(4), PARAMETER           :: phi           =       0.436332313
 REAL(4), SAVE                :: PitCom    (3)                                   ! Commanded pitch of each blade the last time the controller was called, rad.
 REAL(4)                      :: PitComI                                         ! Integral term of command pitch, rad.
 REAL(4)                      :: PitComP                                         ! Proportional term of command pitch, rad.
 REAL(4)                      :: PitComT (3)                                     ! Total command pitch based on the sum of the proportional and integral terms, rad.
-REAL(4)                      :: PitComIPC (3)
-REAL(4)                      :: PitComIPCF (3)
 REAL(4)                      :: PitRate   (3)                                   ! Pitch rates of each blade based on the current pitch angles and current pitch command, rad/s.
 REAL(4), PARAMETER           :: R2D           =      57.295780                  ! Factor to convert radians to degrees.
 REAL(4)                      :: rootMOOP (3)                                    ! Blade root out of plane bending moments, Nm.
@@ -102,9 +103,6 @@ REAL(4)                      :: Y_MErr                                          
 REAL(4), PARAMETER           :: Y_omegaLPFast =       1.0						! Corner frequency fast low pass filter
 REAL(4), PARAMETER           :: Y_omegaLPSlow =       0.016666667				! Corner frequency slow low pass filter
 REAL(4), SAVE                :: Y_YawEndT										! Yaw end time. Indicates the time up until which the yaws with a fixed rate
-REAL(4), PARAMETER           :: Y_zetaLP      =       0.5
-REAL(4), PARAMETER           :: zetaLp        =       1.0
-REAL(4), PARAMETER           :: zetaNotch     =       0.5
 
 INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
@@ -137,13 +135,13 @@ NumBl        = NINT( avrSWAP(61) )
 !to_sc(1) = 5.0;
 !to_sc(2) = 2.0;
 
-aziAngle     =       avrSWAP(60)
 BlPitch  (1) =       avrSWAP( 4)
 BlPitch  (2) =       avrSWAP(33)
 BlPitch  (3) =       avrSWAP(34)
 DT           =       avrSWAP( 3)
 GenSpeed     =       avrSWAP(20)
 HorWindV     =       avrSWAP(27)
+IPC_aziAngle =       avrSWAP(60)
 PC_MinPit    =       avrSWAP( 6)
 PC_SetPnt    =       avrSWAP( 5)
 rootMOOP (1) =       avrSWAP(30)
@@ -299,7 +297,7 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
                           'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT1   '//Tab//'PitComT2   '//Tab//'PitComT3   '//Tab// &
                           'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
                           'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
-                          'PitComIPCF1 '//Tab//'PitComIPCF2 '//Tab//'PitComIPCF3 '//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
+                          'IPC_PitComF1'//Tab//'IPC_PitComF2'//Tab//'IPC_PitComF3'//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
                           'Y_AccErr    '//Tab//'Y_YawEndT   '
 
       WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
@@ -451,7 +449,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
    ! Superimpose the individual commands to get the total pitch command;
    !   saturate the overall command using the pitch angle limits:
 
-      CALL IPC(rootMOOP, aziAngle, DT, KInter, KNotch, PC_omegaLP, PC_omegaNotch, phi, zetaLP, zetaNotch, iStatus, NumBl, PitComIPCF)
+      CALL IPC(rootMOOP, IPC_aziAngle, DT, IPC_KInter, IPC_KNotch, IPC_omegaLP, IPC_omegaNotch, IPC_phi, IPC_zetaLP, IPC_zetaNotch, iStatus, NumBl, IPC_PitComF)
 
    ! Saturate the overall commanded pitch using the pitch rate limit:
    ! NOTE: Since the current pitch angle may be different for each blade
@@ -464,7 +462,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
          PitComT (K)  = PitComP + PitComI                    ! Overall command (unsaturated)
          PitComT (K)  = saturate(PitComT(K),PC_SetPnt,PC_MaxPit)				! Saturate the overall command using the pitch angle limits
-         PitComT (K)  = PitComT(K) + PitComIPCF(K)
+         PitComT (K)  = PitComT(K) + IPC_PitComF(K)
          PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)
 
          PitRate(K) = ( PitComT(K) - BlPitch(K) )/ElapTime                 ! Pitch rate of blade K (unsaturated)
@@ -511,7 +509,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
                                              SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
                                              PitRate*R2D,								PitCom*R2D,														&
                                              BlPitch*R2D,								rootMOOP,														&
-                                             PitComIPCF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
+                                             IPC_PitComF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
                                              Y_AccErr*R2D,  Y_YawEndT
       END IF
 
