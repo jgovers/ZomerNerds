@@ -44,7 +44,7 @@ REAL(4), PARAMETER           :: CornerFreq    =      0.7853981                  
 REAL(4)                      :: DT                                              ! Time step [s].
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller [sec].
 REAL(4)                      :: GenSpeed                                        ! Current  HSS (generator) speed [rad/s].
-REAL(4), SAVE                :: GenSpeedF                                       ! Filtered HSS (generator) speed [rad/s].
+REAL(4)                      :: GenSpeedF                                       ! Filtered HSS (generator) speed [rad/s].
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
@@ -75,7 +75,6 @@ REAL(4)                      :: PitComIPCF (3)
 REAL(4)                      :: PitRate   (3)                                   ! Pitch rates of each blade based on the current pitch angles and current pitch command, rad/s.
 REAL(4), PARAMETER           :: R2D           =      57.295780                  ! Factor to convert radians to degrees.
 REAL(4)                      :: rootMOOP (3)                                    ! Blade root out of plane bending moments, Nm.
-REAL(4)                      :: rootMOOPF (3)                                   ! Blade root out of plane bending moments, Nm.
 REAL(4), PARAMETER           :: RPS2RPM       =       9.5492966                 ! Factor to convert radians per second to revolutions per minute.
 REAL(4)                      :: SpdErr                                          ! Current speed error, rad/s.
 REAL(4)                      :: Time                                            ! Current simulation time, sec.
