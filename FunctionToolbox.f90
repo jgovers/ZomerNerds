@@ -12,7 +12,10 @@ MODULE FunctionToolbox
 
             REAL(4), INTENT(IN)		:: inputValue,minValue,maxValue
 
-            saturate = MIN(MAX(inputValue,minValue),maxValue)
+            IF(minValue > maxValue) THEN    ! If the minimum value is larger than the maximum value give a warning
+                WRITE(*,*) "Warning in saturate function: minimum value larger than maximum value"
+            ENDIF
+                saturate = MIN(MAX(inputValue,minValue),maxValue)
 
         END FUNCTION saturate
 !=======================================================================
