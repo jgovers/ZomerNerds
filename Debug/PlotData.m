@@ -59,6 +59,7 @@ legend('GenSpeed','GenSpeedF')
 ylabel('Speed [rpm]')
 
 figure
+s(1)=subplot(3,1,1);
 title('GenTorque')
 hold on
 plot(avrTime,avrSWAP(:,47))
@@ -66,7 +67,8 @@ ylabel('Torque [Nm]')
 yyaxis right
 plot(db.Time,db.GenTrq_Reg,'LineWidth',2)
 ylabel('Torque region')
-legend('GenSpeed', 'Torque Region')2
+yyaxis left
+legend('GenSpeed', 'Torque Region')
 
 % figure
 % title('Pitch')
@@ -76,7 +78,7 @@ legend('GenSpeed', 'Torque Region')2
 % subplot(2,1,2), plot(Time,PitRate1)
 % legend('PitRate1')
 % 
-figure
+s(2)=subplot(3,1,2);
 title('Pitch')
 hold on
 plot(db.Time,db.PitCom1)
@@ -86,6 +88,16 @@ plot(db.Time,db.PitComT1)
 % plot(Time,PitComT)
 % plot(Time,GenTrq)
 legend('PitCom1','BlPitch1','PitComT')
+
+s(3) = subplot(3,1,3);
+title('Speed error integral')
+hold on
+plot(db.Time,db.IntSpdErr)
+yyaxis right
+plot(db.Time,db.GK)
+yyaxis left
+legend('Integral','gain correction factor')
+linkaxes(s,'x')
 
 figure
 title('rootMOOP')
