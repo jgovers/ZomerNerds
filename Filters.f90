@@ -30,10 +30,8 @@ CONTAINS
 			! Initialization
 
         IF ( iStatus == 0 )  THEN
-
            OutputSignalLast (inst) = InputSignal
            InputSignalLast (inst) = InputSignal
-
         ENDIF
 
 			! Body
@@ -72,12 +70,10 @@ CONTAINS
 			! Initialization
 
         IF ( iStatus == 0 )  THEN
-
             OutputSignalLast1(inst)  = InputSignal
             OutputSignalLast2(inst)  = InputSignal
             InputSignalLast1(inst)   = InputSignal
             InputSignalLast2(inst)   = InputSignal
-
         ENDIF
 
 			! Body
@@ -118,10 +114,8 @@ CONTAINS
 			! Initialization
 
         IF ( iStatus == 0 )  THEN
-
             OutputSignalLast(inst)    = InputSignal
             InputSignalLast(inst)     = InputSignal
-
         ENDIF
 
         K = 2.0 / DT
@@ -163,12 +157,10 @@ CONTAINS
 			! Initialization
 
         IF ( iStatus == 0 )  THEN
-
             OutputSignalLast1(inst)  = InputSignal
             OutputSignalLast2(inst)  = InputSignal
             InputSignalLast1(inst)   = InputSignal
             InputSignalLast2(inst)   = InputSignal
-
         ENDIF
 
 			! Body

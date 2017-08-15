@@ -47,22 +47,20 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
 		! Filter rootMOOPs with notch filter
 
     DO K = 1,NumBl
-
 		! Instances 1-3 of the Notch Filter are reserved for this routine.
         rootMOOPF(K) = rootMOOP(K)	! Notch filter currently not in use
         !rootMOOPF(K) = NotchFilter(rootMOOP(K), DT, KNotch, omegaNotch, zetaNotch, iStatus, K)
-
     END DO
+
+		! Calculate commanded IPC pitch angles
 
     CALL CalculatePitCom(rootMOOPF, aziAngle, DT, KInter, phi, iStatus, PitComIPC)
 
 		! Filter PitComIPC with second order low pass filter
 
     DO K = 1,NumBl
-
         ! Instances 1-3 of the Second order Low-Pass Filter are reserved for this routine.
         PitComIPCF(K) = SecLPFilter(PitComIPC(K), DT, omegaLP, zetaLP, iStatus, K)
-
     END DO
 
 
@@ -99,13 +97,11 @@ CONTAINS
 
 			! Initialization
 
+			! Set integrals to be 0 in the first time step
+
         IF(iStatus==0)  THEN
-
-				! Set integrals to be 0 in the first time step
-
             IntAxisDirect = 0.0
             IntAxisQuadr = 0.0
-
         END IF
 
 			! Body

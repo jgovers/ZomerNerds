@@ -505,7 +505,6 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 
 	IF ( Y_YawEndT <= Time) THEN
-
 		avrSWAP(48) = 0.0
 
 		Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
@@ -554,6 +553,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 
 ELSEIF ( iStatus == -8 )  THEN
+
 		! pack
 	OPEN( Un, FILE=TRIM( InFile ), STATUS='UNKNOWN', FORM='UNFORMATTED' , ACCESS='STREAM', IOSTAT=ErrStat, ACTION='WRITE' )
 
@@ -580,6 +580,7 @@ ELSEIF ( iStatus == -8 )  THEN
 	END IF
 
 ELSEIF( iStatus == -9 ) THEN
+
 		!unpack
 	OPEN( Un, FILE=TRIM( InFile ), STATUS='OLD', FORM='UNFORMATTED', ACCESS='STREAM', IOSTAT=ErrStat, ACTION='READ' )
 
@@ -603,7 +604,6 @@ ELSEIF( iStatus == -9 ) THEN
 
 		CLOSE ( Un )
 	ENDIF
-
 
 ENDIF
 
