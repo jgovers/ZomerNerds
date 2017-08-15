@@ -1,5 +1,5 @@
 %% Cleaning
-close all
+% close all
 clearvars
 clc
 
@@ -55,8 +55,12 @@ title('GenSpeed')
 hold on
 plot(db.Time,db.GenSpeed)
 plot(db.Time,db.GenSpeedF)
-legend('GenSpeed','GenSpeedF')
 ylabel('Speed [rpm]')
+yyaxis right
+plot(db.Time,db.SpdErr)
+ylabel('Speed [rpm]')
+legend('GenSpeed','GenSpeedF','SpdErr')
+
 
 figure
 s(1)=subplot(3,1,1);
@@ -148,13 +152,13 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
-figure
-title('Measured yaw error')
-hold on
-plot(db.Time,db.Y_MErr)
-plot(db.Time,db.Y_ErrLPFFast)
-plot(db.Time,db.Y_ErrLPFSlow)
-legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+% figure
+% title('Measured yaw error')
+% hold on
+% plot(db.Time,db.Y_MErr)
+% plot(db.Time,db.Y_ErrLPFFast)
+% plot(db.Time,db.Y_ErrLPFSlow)
+% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
 
 % figure
 % title('Integral of fast yaw error')
