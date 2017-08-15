@@ -15,31 +15,47 @@ CONTAINS
 		REAL(4), INTENT(IN)		:: minValue
 		REAL(4), INTENT(IN)		:: maxValue
 
-            IF(minValue > maxValue) THEN    ! If the minimum value is larger than the maximum value give a warning
-                WRITE(*,*) "Warning in saturate function: minimum value larger than maximum value"
-            ENDIF
-                saturate = MIN(MAX(inputValue,minValue),maxValue)
+        IF(minValue > maxValue) THEN    ! If the minimum value is larger than the maximum value give a warning
+            WRITE(*,*) "Warning in saturate function: minimum value larger than maximum value"
+        ENDIF
+            saturate = MIN(MAX(inputValue,minValue),maxValue)
 
-        END FUNCTION saturate
-!=======================================================================
+    END FUNCTION saturate
+    !-------------------------------------------------------------------------------------------------------------------------------
+    ! PI controller
+    ! NOTE: if it is required for this function to be used multiple times, the saved variable integral needs to be modified so that
+	! it supports multiple instances (see LPFilter in the Filters module).
+    REAL FUNCTION PI(input,Kp,Ki,DT,iStatus,satMin,satMax)
+	!...............................................................................................................................
 
-        REAL FUNCTION PI(input,Kp,Ki,DT,iStatus,satMin,satMax)
-            ! PI controller
-            IMPLICIT NONE
+        IMPLICIT NONE
 
-            REAL(4), INTENT(IN)		::  input       ! Input signal for the PI controller
-            REAL(4), INTENT(IN)		::  DT          ! Time step [s]
-            REAL(4), INTENT(IN)		::  Kp, Ki      ! Proportional and integral gain
-            REAL(4), INTENT(IN)		::  satMin, satMax ! Input signal for the PI controller
-            INTEGER, INTENT(IN)     ::  iStatus     ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
-            REAL(4), SAVE			::	integral    ! Keeps track of the integral
+            ! Inputs
 
-            IF ( iStatus == 0 ) integral = 0		! Instantiate the integral on the first call
-            integral = integral + Ki*input*DT		! Integrate
-            integral = saturate(integral, satMin, satMax)
+        REAL(4), INTENT(IN)		::  input       ! Input signal for the PI controller
+        REAL(4), INTENT(IN)		::  DT          ! Time step [s]
+        REAL(4), INTENT(IN)		::  Kp          ! Proportional gain
+        REAL(4), INTENT(IN)		::  Ki          ! Integral gain
+        REAL(4), INTENT(IN)		::  satMin      ! Minimum saturation value
+        REAL(4), INTENT(IN)		::  satMax      ! Maximum saturation value
+        INTEGER, INTENT(IN)     ::  iStatus     ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 
-            PI = Kp*input + integral 			    ! Calculate output
-            PI = saturate(PI, satMin, satMax)
-        END FUNCTION PI
+            ! Local
+
+        REAL(4), SAVE			::	integral    ! Keeps track of the integral
+
+            ! Initialization
+
+        IF ( iStatus == 0 ) integral = 0		! Instantiate the integral on the first call
+
+            ! Body
+
+        integral = integral + Ki*input*DT		! Integrate
+        integral = saturate(integral, satMin, satMax)
+
+        PI = Kp*input + integral 			    ! Calculate output
+        PI = saturate(PI, satMin, satMax)
+
+    END FUNCTION PI
 
 END MODULE FunctionToolbox
