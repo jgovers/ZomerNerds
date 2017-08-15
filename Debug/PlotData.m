@@ -68,7 +68,7 @@ yyaxis right
 plot(db.Time,db.GenTrq_Reg,'LineWidth',2)
 ylabel('Torque region')
 yyaxis left
-legend('GenSpeed', 'Torque Region')
+legend('GenTrq', 'Torque Region')
 
 % figure
 % title('Pitch')
