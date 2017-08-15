@@ -44,8 +44,8 @@ CHARACTER(KIND=C_CHAR), INTENT(INOUT) :: avcMSG    (NINT(avrSWAP(49)))  ! MESSAG
 
    ! Local Variables:
 
-REAL(4)                      :: BlPitch   (3)                                   ! Current values of the blade pitch angles [rad].
-REAL(4), PARAMETER           :: CornerFreq    =      0.7853981                  ! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter [rad/s]. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1 [Hz] = 0.25 [Hz] = 1.570796 [rad/s]).
+REAL(4)                      :: BlPitch (3)                                   	! Current values of the blade pitch angles [rad].
+REAL(4), PARAMETER           :: CornerFreq    	=	0.7853981                  	! Corner frequency (-3dB point) in the recursive, single-pole, low-pass filter [rad/s]. -- chosen to be 1/4 the blade edgewise natural frequency ( 1/4 of approx. 1 [Hz] = 0.25 [Hz] = 1.570796 [rad/s]).
 REAL(4)                      :: DT                                              ! Time step [s].
 REAL(4)                      :: ElapTime                                        ! Elapsed time since the last call to the controller [sec].
 REAL(4)                      :: GenSpeed                                        ! Current  HSS (generator) speed [rad/s].
@@ -53,61 +53,61 @@ REAL(4)                      :: GenSpeedF                                       
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, N-m.
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, (-).
 REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, m/s.
-REAL(4)                      :: IPC_aziAngle                                        ! Rotor azimuth angle [rad].
-REAL(4), PARAMETER           :: IPC_KInter      =       0.0000000008
-REAL(4), PARAMETER           :: IPC_KNotch      =       1
-REAL(4), PARAMETER           :: IPC_omegaLP     =       1000.0
-REAL(4), PARAMETER           :: IPC_omegaNotch  =       1.269330365
-REAL(4), PARAMETER           :: IPC_phi         =       0.436332313
+REAL(4)                      :: IPC_aziAngle                                 	! Rotor azimuth angle [rad].
+REAL(4), PARAMETER           :: IPC_KInter      =	0.0000000008
+REAL(4), PARAMETER           :: IPC_KNotch      =	1
+REAL(4), PARAMETER           :: IPC_omegaLP     =	1000.0
+REAL(4), PARAMETER           :: IPC_omegaNotch  =	1.269330365
+REAL(4), PARAMETER           :: IPC_phi         =	0.436332313
 REAL(4)                      :: IPC_PitComF (3)
-REAL(4), PARAMETER           :: IPC_zetaLP      =       1.0
-REAL(4), PARAMETER           :: IPC_zetaNotch   =       0.5
+REAL(4), PARAMETER           :: IPC_zetaLP      =	1.0
+REAL(4), PARAMETER           :: IPC_zetaNotch   =	0.5
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, rad.
 REAL(4), SAVE                :: LastGenTrq                                      ! Commanded electrical generator torque the last time the controller was called, N-m.
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, sec.
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, sec.
 REAL(4), SAVE                :: LastTimeVS                                      ! Last time the torque controller was called, sec.
-REAL(4), PARAMETER           :: PC_KI         =       0.008068634               ! Integral gain for pitch controller at rated pitch (zero), (-).
-REAL(4), PARAMETER           :: PC_KK         =       0.1099965                 ! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
-REAL(4), PARAMETER           :: PC_KP         =       0.01882681                ! Proportional gain for pitch controller at rated pitch (zero), sec.
-REAL(4), PARAMETER           :: PC_MaxPit     =       1.570796                  ! Maximum pitch setting in pitch controller, rad.
-REAL(4), PARAMETER           :: PC_MaxRat     =       0.1396263                 ! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
+REAL(4), PARAMETER           :: PC_KI         	=	0.008068634               	! Integral gain for pitch controller at rated pitch (zero), (-).
+REAL(4), PARAMETER           :: PC_KK         	=	0.1099965                 	! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), rad.
+REAL(4), PARAMETER           :: PC_KP         	=	0.01882681                	! Proportional gain for pitch controller at rated pitch (zero), sec.
+REAL(4), PARAMETER           :: PC_MaxPit     	=	1.570796                  	! Maximum pitch setting in pitch controller, rad.
+REAL(4), PARAMETER           :: PC_MaxRat     	=	0.1396263                 	! Maximum pitch  rate (in absolute value) in pitch  controller, rad/s.
 REAL(4)                      :: PC_MinPit                                       ! Minimum pitch setting in pitch controller, rad.
-REAL(4), PARAMETER           :: PC_RefSpd     =     122.9096                    ! Desired (reference) HSS speed for pitch controller, rad/s.
+REAL(4), PARAMETER           :: PC_RefSpd     	=	122.9096                    ! Desired (reference) HSS speed for pitch controller, rad/s.
 REAL(4)                      :: PC_SetPnt
-REAL(4), SAVE                :: PitCom    (3)                                   ! Commanded pitch of each blade the last time the controller was called, rad.
+REAL(4), SAVE                :: PitCom (3)                                   	! Commanded pitch of each blade the last time the controller was called, rad.
 REAL(4)                      :: PitComI                                         ! Integral term of command pitch, rad.
 REAL(4)                      :: PitComP                                         ! Proportional term of command pitch, rad.
 REAL(4)                      :: PitComT (3)                                     ! Total command pitch based on the sum of the proportional and integral terms, rad.
-REAL(4)                      :: PitRate   (3)                                   ! Pitch rates of each blade based on the current pitch angles and current pitch command, rad/s.
-REAL(4), PARAMETER           :: R2D           =      57.295780                  ! Factor to convert radians to degrees.
+REAL(4)                      :: PitRate (3)                                   	! Pitch rates of each blade based on the current pitch angles and current pitch command, rad/s.
+REAL(4), PARAMETER           :: R2D           	=	57.295780                  	! Factor to convert radians to degrees.
 REAL(4)                      :: rootMOOP (3)                                    ! Blade root out of plane bending moments, Nm.
-REAL(4), PARAMETER           :: RPS2RPM       =       9.5492966                 ! Factor to convert radians per second to revolutions per minute.
+REAL(4), PARAMETER           :: RPS2RPM       	=	9.5492966                 	! Factor to convert radians per second to revolutions per minute.
 REAL(4)                      :: SpdErr                                          ! Current speed error, rad/s.
 REAL(4)                      :: Time                                            ! Current simulation time, sec.
 REAL(4)                      :: TrqRate                                         ! Torque rate based on the current and last torque commands, N-m/s.
-REAL(4), PARAMETER           :: VS_CtInSp     =      70.16224                   ! Transitional generator speed (HSS side) between regions 1 and 1 1/2, rad/s.
-REAL(4), PARAMETER           :: VS_MaxRat     =   15000.0                       ! Maximum torque rate (in absolute value) in torque controller, N-m/s.
-REAL(4), PARAMETER           :: VS_MaxTq      =   47402.91                      ! Maximum generator torque in Region 3 (HSS side), N-m. -- chosen to be 10% above VS_RtTq = 43.09355kNm
-REAL(4), PARAMETER           :: VS_Rgn2K      =       2.332287                  ! Generator torque constant in Region 2 (HSS side), N-m/(rad/s)^2.
-REAL(4), PARAMETER           :: VS_Rgn2Sp     =      91.21091                   ! Transitional generator speed (HSS side) between regions 1 1/2 and 2, rad/s.
-REAL(4), PARAMETER           :: VS_Rgn3MP     =       0.01745329                ! Minimum pitch angle at which the torque is computed as if we are in region 3 regardless of the generator speed, rad. -- chosen to be 1.0 degree above PC_MinPit
-REAL(4), PARAMETER           :: VS_RtGnSp     =     121.6805                    ! Rated generator speed (HSS side), rad/s. -- chosen to be 99% of PC_RefSpd
-REAL(4), PARAMETER           :: VS_RtTq      = 43773.63
-REAL(4), PARAMETER           :: VS_RtPwr      = 5296610.0                       ! Rated generator generator power in Region 3, Watts. -- chosen to be 5MW divided by the electrical generator efficiency of 94.4%
+REAL(4), PARAMETER           :: VS_CtInSp     	=	70.16224                   	! Transitional generator speed (HSS side) between regions 1 and 1 1/2, rad/s.
+REAL(4), PARAMETER           :: VS_MaxRat     	=	15000.0                   	! Maximum torque rate (in absolute value) in torque controller, N-m/s.
+REAL(4), PARAMETER           :: VS_MaxTq      	=	47402.91                  	! Maximum generator torque in Region 3 (HSS side), N-m. -- chosen to be 10% above VS_RtTq = 43.09355kNm
+REAL(4), PARAMETER           :: VS_Rgn2K      	=	2.332287                  	! Generator torque constant in Region 2 (HSS side), N-m/(rad/s)^2.
+REAL(4), PARAMETER           :: VS_Rgn2Sp     	=	91.21091                  	! Transitional generator speed (HSS side) between regions 1 1/2 and 2, rad/s.
+REAL(4), PARAMETER           :: VS_Rgn3MP     	=	0.01745329                	! Minimum pitch angle at which the torque is computed as if we are in region 3 regardless of the generator speed, rad. -- chosen to be 1.0 degree above PC_MinPit
+REAL(4), PARAMETER           :: VS_RtGnSp     	=	121.6805                    ! Rated generator speed (HSS side), rad/s. -- chosen to be 99% of PC_RefSpd
+REAL(4), PARAMETER           :: VS_RtTq      	=	43773.63
+REAL(4), PARAMETER           :: VS_RtPwr      	=	5296610.0                   ! Rated generator generator power in Region 3, Watts. -- chosen to be 5MW divided by the electrical generator efficiency of 94.4%
 REAL(4), SAVE                :: VS_Slope15                                      ! Torque/speed slope of region 1 1/2 cut-in torque ramp , N-m/(rad/s).
 REAL(4), SAVE                :: VS_Slope25                                      ! Torque/speed slope of region 2 1/2 induction generator, N-m/(rad/s).
-REAL(4), PARAMETER           :: VS_SlPc       =      10.0                       ! Rated generator slip percentage in Region 2 1/2, %.
+REAL(4), PARAMETER           :: VS_SlPc       	=	10.0                       	! Rated generator slip percentage in Region 2 1/2, %.
 REAL(4), SAVE                :: VS_SySp                                         ! Synchronous speed of region 2 1/2 induction generator, rad/s.
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, rad/s.
 REAL(4), SAVE                :: Y_AccErr										! Accumulated yaw error [rad]
 REAL(4)                      :: Y_ErrLPFFast									! Filtered yaw error by fast low pass filter [rad]
 REAL(4)                      :: Y_ErrLPFSlow									! Filtered yaw error by slow low pass filter [rad]
-REAL(4), PARAMETER           :: Y_ErrThresh   =       1.745329252               ! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512)
-REAL(4), PARAMETER           :: Y_YawRate     =       0.005235988               ! Yaw rate [rad/s]
+REAL(4), PARAMETER           :: Y_ErrThresh   	=	1.745329252               	! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512)
+REAL(4), PARAMETER           :: Y_YawRate     	=	0.005235988               	! Yaw rate [rad/s]
 REAL(4)                      :: Y_MErr                                          ! Measured yaw error [rad]
-REAL(4), PARAMETER           :: Y_omegaLPFast =       1.0						! Corner frequency fast low pass filter
-REAL(4), PARAMETER           :: Y_omegaLPSlow =       0.016666667				! Corner frequency slow low pass filter
+REAL(4), PARAMETER           :: Y_omegaLPFast 	=	1.0							! Corner frequency fast low pass filter
+REAL(4), PARAMETER           :: Y_omegaLPSlow 	=	0.016666667					! Corner frequency slow low pass filter
 REAL(4), SAVE                :: Y_YawEndT										! Yaw end time. Indicates the time up until which the yaws with a fixed rate
 
 INTEGER(4)                   :: ErrStat
@@ -120,10 +120,10 @@ INTEGER(4), PARAMETER        :: UnDb2         = 86                              
 INTEGER(4), PARAMETER        :: Un            = 87                              ! I/O unit for pack/unpack (checkpoint & restart)
 INTEGER(4), PARAMETER        :: UnUser        = 88                              ! I/O unit for user defined parameter file
 
-LOGICAL(1), PARAMETER        :: PC_DbgOut     = .TRUE.                          ! Flag to indicate whether to output debugging information
+LOGICAL(1), PARAMETER        :: DbgOut     = .TRUE.                          	! Flag to indicate whether to output debugging information
 
 CHARACTER(   1), PARAMETER   :: Tab           = CHAR( 9 )                       ! The tab character.
-CHARACTER(  25), PARAMETER   :: FmtDat    = "(F8.3,99('"//Tab//"',ES10.3E2,:))" ! The format of the debugging data
+CHARACTER(  25), PARAMETER   :: FmtDat    = "(F8.3,99('"//Tab//"',ES10.3E2,:))"	! The format of the debugging data
 CHARACTER(   *), PARAMETER   :: UserFile      = 'DISCON.IN'                     ! Name of the user defined parameter file
 
 CHARACTER(SIZE(accINFILE)-1) :: InFile                                          ! a Fortran version of the input C string (not considered an array here)    [subtract 1 for the C null-character]
@@ -190,20 +190,36 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	END DO
 	CLOSE(UnUser)
 
-
 		! Determine some torque control parameters not specified directly:
 
-	VS_SySp    = VS_RtGnSp/( 1.0 +  0.01*VS_SlPc )
-	VS_Slope15 = ( VS_Rgn2K*VS_Rgn2Sp*VS_Rgn2Sp )/( VS_Rgn2Sp - VS_CtInSp )
-	VS_Slope25 = ( VS_RtPwr/VS_RtGnSp           )/( VS_RtGnSp - VS_SySp   )
+	VS_SySp    	= VS_RtGnSp/( 1.0 +  0.01*VS_SlPc )
+	VS_Slope15 	= ( VS_Rgn2K*VS_Rgn2Sp*VS_Rgn2Sp )/( VS_Rgn2Sp - VS_CtInSp )
+	VS_Slope25 	= ( VS_RtPwr/VS_RtGnSp           )/( VS_RtGnSp - VS_SySp   )
 	IF ( VS_Rgn2K == 0.0 )  THEN  ! .TRUE. if the Region 2 torque is flat, and thus, the denominator in the ELSE condition is zero
 	  VS_TrGnSp = VS_SySp
 	ELSE                          ! .TRUE. if the Region 2 torque is quadratic with speed
 	  VS_TrGnSp = ( VS_Slope25 - SQRT( VS_Slope25*( VS_Slope25 - 4.0*VS_Rgn2K*VS_SySp ) ) )/( 2.0*VS_Rgn2K )
 	ENDIF
 
+		! Initialize the SAVEd variables:
+		! NOTE: LastGenTrq, though SAVEd, is initialized in the torque controller
+		!       below for simplicity, not here.
 
-		! Check validity of input parameters:
+	GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+	IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+	PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
+	Y_AccErr   = 0.0
+	Y_YawEndT  = -1.0
+
+	LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
+	LastTimePC = Time - DT                       ! This will ensure that the pitch  controller is called on the first pass
+	LastTimeVS = Time - DT                       ! This will ensure that the torque controller is called on the first pass
+
+
+	!..............................................................................................................................
+	! Check validity of input parameters:
+	!..............................................................................................................................
+
 
 	IF ( CornerFreq <= 0.0 )  THEN
 	  aviFAIL = -1
@@ -285,11 +301,13 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	  ErrMsg  = 'PC_MinPit must be less than PC_MaxPit.'
 	ENDIF
 
+	!..............................................................................................................................
+	! Initializing debug file
+	!..............................................................................................................................
 
-		! If we're debugging the pitch controller, open the debug file and write the
-		!   header:
+		! If we're debugging, open the debug file and write the header:
 
-	IF ( PC_DbgOut )  THEN
+	IF ( DbgOut )  THEN
 
 	  OPEN ( UnDb, FILE=TRIM( RootName )//'.dbg', STATUS='REPLACE' )
 
@@ -316,20 +334,6 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 
 	ENDIF
 
-
-		! Initialize the SAVEd variables:
-		! NOTE: LastGenTrq, though SAVEd, is initialized in the torque controller
-		!       below for simplicity, not here.
-
-	GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
-	IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
-	PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
-	Y_AccErr   = 0.0
-	Y_YawEndT  = -1.0
-
-	LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
-	LastTimePC = Time - DT                       ! This will ensure that the pitch  controller is called on the first pass
-	LastTimeVS = Time - DT                       ! This will ensure that the torque controller is called on the first pass
 
 ENDIF
 
@@ -526,7 +530,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 		! Output debugging information if requested:
 
-	IF ( PC_DbgOut )  THEN
+	IF ( DbgOut )  THEN
 		WRITE (UnDb,FmtDat)  Time,			ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC_RefSpd, &
 							 SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
 							 PitRate*R2D,								PitCom*R2D,														&
