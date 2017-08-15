@@ -1,16 +1,19 @@
+! This module contains basic functions
 MODULE FunctionToolbox
-    ! This module contains all basic functions
 
     IMPLICIT NONE
 
-    CONTAINS
-!=======================================================================
-    	REAL FUNCTION saturate(inputValue,minValue,maxValue)
-            ! Saturates inputValue. Makes sure it is not smaller than minValue and not larger than maxValue
+CONTAINS
+	!-------------------------------------------------------------------------------------------------------------------------------
+	! Saturates inputValue. Makes sure it is not smaller than minValue and not larger than maxValue
+	REAL FUNCTION saturate(inputValue,minValue,maxValue)
+	!...............................................................................................................................
 
-            IMPLICIT NONE
+		IMPLICIT NONE
 
-            REAL(4), INTENT(IN)		:: inputValue,minValue,maxValue
+		REAL(4), INTENT(IN)		:: inputValue
+		REAL(4), INTENT(IN)		:: minValue
+		REAL(4), INTENT(IN)		:: maxValue
 
             IF(minValue > maxValue) THEN    ! If the minimum value is larger than the maximum value give a warning
                 WRITE(*,*) "Warning in saturate function: minimum value larger than maximum value"

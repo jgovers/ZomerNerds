@@ -4,13 +4,13 @@ clearvars
 clc
 
 %% Settings
-totalTime = tic;
 timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
 %% Loading
+totalTime = tic;
 if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     [~,output] = dos('..\CompileRunAndDebug.cmd', '-echo');
     i = strfind(output,'C:');
@@ -117,7 +117,7 @@ legend('rootMOOP1')
 figure
 title('PitComIPC')
 hold on
-plot(db.Time,db.PitComIPCF1)
+plot(db.Time,db.IPC_PitComF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
 legend('PitComIPCF1')
@@ -152,13 +152,37 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
+
 % figure
 % title('Measured yaw error')
 % hold on
 % plot(db.Time,db.Y_MErr)
 % plot(db.Time,db.Y_ErrLPFFast)
 % plot(db.Time,db.Y_ErrLPFSlow)
-% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow')
+% plot(db.Time,rad2deg(avrSWAP(:,37)))
+% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
+
+% figure
+% title('Integral of fast yaw error')
+% hold on
+% grid on
+% plot(db.Time,db.Y_ErrLPFFast)
+% plot(db.Time,db.Y_AccErr)
+% legend('Y ErrLPFFast','Y AccErr')
+
+% figure
+% title('Yaw Rate')
+% hold on
+% grid on
+% plot(db.Time,avrSWAP(:,48))
+% legend('Yaw Rate')
+
+% figure
+% title('YawTorque')
+% hold on
+% grid on
+% plot(avrTime,avrSWAP(:,41))
+% legend('YawTorque')
 
 % figure
 % title('Integral of fast yaw error')
