@@ -71,7 +71,9 @@ SUBROUTINE IPC(rootMOOP, aziAngle, DT, KInter, KNotch, omegaLP, omegaNotch, phi,
 
 CONTAINS
 	!-------------------------------------------------------------------------------------------------------------------------------
-	! Calculates the commanded pitch angles. Can be used for 1p and 2p IPC depending on input variables
+	! Calculates the commanded pitch angles.
+	! NOTE: if it is required for this subroutine to be used multiple times (for 1p and 2p IPC for example), the saved variables
+	! IntAxisDirect and IntAxisQuadr need to be modified so that they support multiple instances (see LPFilter in the Filters module).
     SUBROUTINE CalculatePitCom(rootMOOP, aziAngle, DT, KInter, phi, iStatus, PitComIPC)
     !...............................................................................................................................
 
