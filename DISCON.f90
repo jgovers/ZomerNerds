@@ -51,7 +51,6 @@ REAL(4)                      :: ElapTime                                        
 REAL(4)                      :: GenSpeed                                        ! Current  HSS (generator) speed [rad/s].
 REAL(4)                      :: GenSpeedF                                       ! Filtered HSS (generator) speed [rad/s].
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, [Nm].
-REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, [-].
 REAL(4)                      :: HorWindV                                        ! Horizontal wind speed at hub-height, [m/s].
 REAL(4)                      :: IPC_aziAngle                                 	! Rotor azimuth angle [rad].
 REAL(4), PARAMETER           :: IPC_KI          =	0.0000000008                ! Integral gain for the individual pitch controller, [-].
@@ -67,6 +66,7 @@ REAL(4), SAVE                :: LastGenTrq                                      
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, [s].
 REAL(4), SAVE                :: LastTimePC                                      ! Last time the pitch  controller was called, [s].
 REAL(4), SAVE                :: LastTimeVS                                      ! Last time the torque controller was called, [s].
+REAL(4)                      :: PC_GK                                           ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, [-].
 REAL(4), PARAMETER           :: PC_KI         	=	0.008068634               	! Integral gain for pitch controller at rated pitch (zero), [-].
 REAL(4), PARAMETER           :: PC_KK         	=	0.1099965                 	! Pitch angle where the the derivative of the aerodynamic power w.r.t. pitch has increased by a factor of two relative to the derivative at rated pitch (zero), [rad].
 REAL(4), PARAMETER           :: PC_KP         	=	0.01882681                	! Proportional gain for pitch controller at rated pitch (zero), [s].
@@ -205,8 +205,8 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 		! NOTE: LastGenTrq, though SAVEd, is initialized in the torque controller
 		!       below for simplicity, not here.
 
-	GK         = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
-	IntSpdErr  = PitCom(1)/( GK*PC_KI )          ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+	PC_GK      = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
+	IntSpdErr  = PitCom(1)/( PC_GK*PC_KI )       ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
 	PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
 	Y_AccErr   = 0.0
 	Y_YawEndT  = -1.0
@@ -312,19 +312,19 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	  OPEN ( UnDb, FILE=TRIM( RootName )//'.dbg', STATUS='REPLACE' )
 
 		WRITE (UnDb,'(/////)')
-		WRITE (UnDb,'(A)')  'Time        '//Tab//'ElapTime    '//Tab//'HorWindV    '//Tab//'GenSpeed   '//Tab//'GenSpeedF  '//Tab//'RelSpdErr  '//Tab// &
-						  'SpdErr      '//Tab//'IntSpdErr   '//Tab//'GK          '//Tab//'PitComP    '//Tab//'PitComI    '//Tab//'PitComT1   '//Tab//'PitComT2   '//Tab//'PitComT3   '//Tab// &
-						  'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
-						  'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
-						  'IPC_PitComF1'//Tab//'IPC_PitComF2'//Tab//'IPC_PitComF3'//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-						  'Y_AccErr    '//Tab//'Y_YawEndT   '
+		WRITE (UnDb,'(A)')  '   Time '  //Tab//'ElapTime  ' //Tab//'HorWindV ' //Tab//'GenSpeed  ' //Tab//'GenSpeedF ' //Tab//'RelSpdErr ' //Tab// &
+						  'SpdErr    '  //Tab//'IntSpdErr ' //Tab//'PC_GK    ' //Tab//'PitComP   ' //Tab//'PitComI   ' //Tab//'MErr      ' //Tab// &
+						  'PitRate1  '  //Tab//'PitRate2  ' //Tab//'PitRate3 ' //Tab//'PitCom1   ' //Tab//'PitCom2   ' //Tab//'PitCom3   ' //Tab// &
+						  'BlPitch1  '  //Tab//'BlPitch2  ' //Tab//'BlPitch3 ' //Tab//'rootMOOP1 ' //Tab//'rootMOOP2 ' //Tab//'rootMOOP3 ' //Tab// &
+						  'PitComF1  '  //Tab//'PitComF2  ' //Tab//'PitComF3 ' //Tab//'PitComT1  ' //Tab//'PitComT2  ' //Tab//'PitComT3  ' //Tab// &
+						  'ErrLPFFast ' //Tab//'ErrLPFSlow' //Tab//'Y_AccErr ' //Tab//'Y_YawEndT '
 
-		WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
-						  '(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-						  '(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-						  '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
-						  '(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-						  '(deg*s)     '//Tab//'(sec)       '
+		WRITE (UnDb,'(A)')  '   (sec) ' //Tab//'(sec)    '   //Tab//'(m/sec) ' //Tab//'(rpm)   '   //Tab//'(rpm)   '   //Tab//'(%)     '   //Tab// &
+						  '(rad/s)   '  //Tab//'(rad)    '   //Tab//'(-)     ' //Tab//'(deg)   '   //Tab//'(deg)   '   //Tab//'(deg)   '   //Tab// &
+						  '(deg/s)   '  //Tab//'(deg/s)  '   //Tab//'(deg/s) ' //Tab//'(deg)   '   //Tab//'(deg)   '   //Tab//'(deg)   '   //Tab// &
+						  '(deg)     '  //Tab//'(deg)    '   //Tab//'(deg)   ' //Tab//'(Nm)    '   //Tab//'(Nm)    '   //Tab//'(Nm)    '   //Tab// &
+						  '(deg)     '  //Tab//'(deg)    '   //Tab//'(deg)   ' //Tab//'(deg)   '   //Tab//'(deg)   '   //Tab//'(deg)   '   //Tab// &
+						  '(deg)     '  //Tab//'(deg)    '   //Tab//'(deg*s) ' //Tab//'(sec)   '
 
 		OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
 		WRITE (UnDb2,'(/////)')
@@ -435,7 +435,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 		! Compute the gain scheduling correction factor based on the previously
 		!   commanded pitch angle for blade 1:
 
-	GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
+	PC_GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
 
 
 		! Compute the current speed error and its integral w.r.t. time; saturate the
@@ -443,15 +443,15 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 	SpdErr    = GenSpeedF - PC_RefSpd									! Current speed error
 	IntSpdErr = IntSpdErr + SpdErr*ElapTime								! Current integral of speed error w.r.t. time
-	IntSpdErr = saturate(IntSpdErr,PC_SetPnt/( GK*PC_KI ),&
-											PC_MaxPit/( GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
+	IntSpdErr = saturate(IntSpdErr,PC_SetPnt/( PC_GK*PC_KI ),&
+											PC_MaxPit/( PC_GK*PC_KI )	)	! Saturate the integral term using the pitch angle limits, converted to integral speed error limits
 
 
 		! Compute the pitch commands associated with the proportional and integral
 		!   gains:
 
-	PitComP   = GK*PC_KP*   SpdErr										! Proportional term
-	PitComI   = GK*PC_KI*IntSpdErr										! Integral term (saturated)
+	PitComP   = PC_GK*PC_KP*   SpdErr									! Proportional term
+	PitComI   = PC_GK*PC_KI*IntSpdErr									! Integral term (saturated)
 
 
 		! Individual pitch control
@@ -530,12 +530,12 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 		! Output debugging information if requested:
 
 	IF ( DbgOut )  THEN
-		WRITE (UnDb,FmtDat)  Time,			ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC_RefSpd, &
-							 SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
-							 PitRate*R2D,								PitCom*R2D,														&
-							 BlPitch*R2D,								rootMOOP,														&
-							 IPC_PitComF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
-							 Y_AccErr*R2D,  Y_YawEndT
+		WRITE (UnDb,FmtDat)  Time,			    ElapTime,		HorWindV,	GenSpeed*RPS2RPM,	GenSpeedF*RPS2RPM,	100.0*SpdErr/PC_RefSpd, &
+							 SpdErr,		    IntSpdErr,		PC_GK,	    PitComP*R2D,		PitComI*R2D,		Y_MErr*R2D,             &
+							 PitRate*R2D,								    PitCom*R2D,														&
+							 BlPitch*R2D,								    rootMOOP,														&
+							 IPC_PitComF*R2D,							    PitComT*R2D,		                                            &
+							 Y_ErrLPFFast*R2D,  Y_ErrLPFSlow*R2D,			Y_AccErr*R2D,       Y_YawEndT
 
 		WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
 	END IF
