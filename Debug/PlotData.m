@@ -97,7 +97,9 @@ title('PI value and integral')
 hold on
 plot(db.Time,db.TEST_PI)
 plot(db.Time,db.TEST_integral)
-legend('PI','integral')
+yyaxis right
+plot(db.Time,db.TEST_SpdErr)
+legend('PI','integral','Speed error')
 
 figure
 title('Speed error integral')

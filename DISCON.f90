@@ -427,6 +427,17 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       ENDIF
 		! Saturate the commanded torque using the maximum torque limit:
+    IF (GenTrq_Reg /= 5.0) THEN
+
+        IF ( iStatus == 0 ) TEST_integral = 0		! Instantiate the integral on the first call
+
+        TEST_integral = TEST_integral + VS_Ki*(VS_RtGnSp - GenSpeedF)*DT		! Integrate
+        TEST_integral = saturate(TEST_integral, 0.0, 0.0)
+
+        TEST_PI = VS_Kp*(VS_RtGnSp - GenSpeedF) + TEST_integral 			    ! Calculate output
+        TEST_PI = saturate(TEST_PI, 0.0, 0.0)
+
+    ENDIF
 
 	GenTrq  = MIN( GenTrq , VS_MaxTq  )						! Saturate the command using the maximum torque limit
 
