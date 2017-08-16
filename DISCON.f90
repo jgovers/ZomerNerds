@@ -124,8 +124,8 @@ INTEGER(4), PARAMETER        :: Un            	= 87                            !
 INTEGER(4), PARAMETER        :: UnUser        	= 88                            ! I/O unit for user defined parameter file
 
 LOGICAL(1), PARAMETER        :: DbgOut     = .TRUE.                          	! Flag to indicate whether to output debugging information
-INTEGER(4)                   :: GenTrq_Reg               ! Temporary debug variable
-INTEGER(4)                   :: P_enabled                ! Temporary debug variable
+REAL(4)		                 :: GenTrq_Reg               ! Temporary debug variable
+REAL(4)		                 :: P_enabled                ! Temporary debug variable
 
 CHARACTER(   1), PARAMETER   :: Tab           = CHAR( 9 )                       ! The tab character.
 CHARACTER(  25), PARAMETER   :: FmtDat    = "(F8.3,99('"//Tab//"',ES10.3E2,:))"	! The format of the debugging data
