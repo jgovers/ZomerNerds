@@ -52,16 +52,16 @@ REAL(4)                      :: GenSpeed                                        
 REAL(4)                      :: GenSpeedF                                       ! Filtered HSS (generator) speed [rad/s].
 REAL(4)                      :: GenTrq                                          ! Electrical generator torque, [Nm].
 REAL(4)                      :: GK                                              ! Current value of the gain correction factor, used in the gain scheduling law of the pitch controller, [-].
-REAL(4)                      :: HorWindV                                        ! Horizontal hub-heigh wind speed, [m/s].
+REAL(4)                      :: HorWindV                                        ! Horizontal wind speed at hub-height, [m/s].
 REAL(4)                      :: IPC_aziAngle                                 	! Rotor azimuth angle [rad].
-REAL(4), PARAMETER           :: IPC_KInter      =	0.0000000008
-REAL(4), PARAMETER           :: IPC_KNotch      =	1
-REAL(4), PARAMETER           :: IPC_omegaLP     =	1000.0
-REAL(4), PARAMETER           :: IPC_omegaNotch  =	1.269330365
-REAL(4), PARAMETER           :: IPC_phi         =	0.436332313
-REAL(4)                      :: IPC_PitComF (3)
-REAL(4), PARAMETER           :: IPC_zetaLP      =	1.0
-REAL(4), PARAMETER           :: IPC_zetaNotch   =	0.5
+REAL(4), PARAMETER           :: IPC_KI          =	0.0000000008                ! Integral gain for the individual pitch controller, [-].
+REAL(4), PARAMETER           :: IPC_KNotch      =	1                           ! Notch filter gain for the individual pitch controller, [-].
+REAL(4), PARAMETER           :: IPC_omegaLP     =	1000.0                      ! Low pass filter corner frequency for the individual pitch controller, [rad/s].
+REAL(4), PARAMETER           :: IPC_omegaNotch  =	1.269330365                 ! Notch filter corner frequency for the individual pitch controller, [rad/s].
+REAL(4), PARAMETER           :: IPC_phi         =	0.436332313                 ! Phase offset added to the azimuth angle for the individual pitch controller, [rad].
+REAL(4)                      :: IPC_PitComF (3)                                 ! Commanded pitch of each blade as calculated by the individual pitch controller, F stands for low pass filtered, [rad].
+REAL(4), PARAMETER           :: IPC_zetaLP      =	1.0                         ! Low pass filter damping factor for the individual pitch controller, [-].
+REAL(4), PARAMETER           :: IPC_zetaNotch   =	0.5                         ! Notch filter damping factor for the individual pitch controller, [-].
 REAL(4), SAVE                :: IntSpdErr                                       ! Current integral of speed error w.r.t. time, [rad].
 REAL(4), SAVE                :: LastGenTrq                                      ! Commanded electrical generator torque the last time the controller was called, [Nm].
 REAL(4), SAVE                :: LastTime                                        ! Last time this DLL was called, [s].
@@ -74,7 +74,7 @@ REAL(4), PARAMETER           :: PC_MaxPit     	=	1.570796                  	! Ma
 REAL(4), PARAMETER           :: PC_MaxRat     	=	0.1396263                 	! Maximum pitch  rate (in absolute value) in pitch  controller, [rad/s].
 REAL(4)                      :: PC_MinPit                                       ! Minimum pitch setting in pitch controller, [rad].
 REAL(4), PARAMETER           :: PC_RefSpd     	=	122.9096                    ! Desired (reference) HSS speed for pitch controller, [rad/s].
-REAL(4)                      :: PC_SetPnt
+REAL(4)                      :: PC_SetPnt                                       ! Pitch set point used as minimum, probably set to zero, [rad].
 REAL(4), SAVE                :: PitCom (3)                                   	! Commanded pitch of each blade the last time the controller was called, [rad].
 REAL(4)                      :: PitComI                                         ! Integral term of command pitch, [rad].
 REAL(4)                      :: PitComP                                         ! Proportional term of command pitch, [rad].
@@ -93,7 +93,7 @@ REAL(4), PARAMETER           :: VS_Rgn2K      	=	2.332287                  	! Ge
 REAL(4), PARAMETER           :: VS_Rgn2Sp     	=	91.21091                  	! Transitional generator speed (HSS side) between regions 1 1/2 and 2, [rad/s].
 REAL(4), PARAMETER           :: VS_Rgn3MP     	=	0.01745329                	! Minimum pitch angle at which the torque is computed as if we are in region 3 regardless of the generator speed, [rad]. -- chosen to be 1.0 degree above PC_MinPit
 REAL(4), PARAMETER           :: VS_RtGnSp     	=	121.6805                    ! Rated generator speed (HSS side), [rad/s]. -- chosen to be 99% of PC_RefSpd
-REAL(4), PARAMETER           :: VS_RtTq      	=	43773.63
+REAL(4), PARAMETER           :: VS_RtTq      	=	43773.63                    ! Rated torque, [Nm].
 REAL(4), PARAMETER           :: VS_RtPwr      	=	5296610.0                   ! Rated generator generator power in Region 3, [W]. -- chosen to be 5MW divided by the electrical generator efficiency of 94.4%
 REAL(4), SAVE                :: VS_Slope15                                      ! Torque/speed slope of region 1 1/2 cut-in torque ramp , [Nm/(rad/s)].
 REAL(4), SAVE                :: VS_Slope25                                      ! Torque/speed slope of region 2 1/2 induction generator, [Nm/(rad/s)].
@@ -456,7 +456,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 		! Individual pitch control
 
-	CALL IPC(rootMOOP, IPC_aziAngle, DT, IPC_KInter, IPC_KNotch, IPC_omegaLP, IPC_omegaNotch, IPC_phi, IPC_zetaLP, IPC_zetaNotch, iStatus, NumBl, IPC_PitComF)
+	CALL IPC(rootMOOP, IPC_aziAngle, DT, IPC_KI, IPC_KNotch, IPC_omegaLP, IPC_omegaNotch, IPC_phi, IPC_zetaLP, IPC_zetaNotch, iStatus, NumBl, IPC_PitComF)
 
 		! Superimpose the individual commands to get the total pitch command;
 		!   saturate the overall command using the pitch angle limits:
