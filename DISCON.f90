@@ -88,8 +88,8 @@ REAL(4)                      :: SpdErr                                          
 REAL(4)                      :: Time                                            ! Current simulation time, [s].
 REAL(4)                      :: TrqRate                                         ! Torque rate based on the current and last torque commands, [Nm/s].
 REAL(4), PARAMETER           :: VS_CtInSp     	=	70.16224                   	! Transitional generator speed (HSS side) between regions 1 and 1 1/2, [rad/s].
-REAL(4), PARAMETER           :: VS_Ki				=	-2100.0						! Integral gain
-REAL(4), PARAMETER           :: VS_Kp				=	-4200.0						! Proportional gain
+REAL(4), PARAMETER           :: VS_Ki			=	-2100.0						! Integral gain
+REAL(4), PARAMETER           :: VS_Kp			=	-4200.0						! Proportional gain
 REAL(4), PARAMETER           :: VS_MaxRat     	=	15000.0                   	! Maximum torque rate (in absolute value) in torque controller, [Nm/s].
 REAL(4), PARAMETER           :: VS_MaxTq      	=	47402.91                  	! Maximum generator torque in Region 3 (HSS side), [Nm]. -- chosen to be 10% above VS_RtTq = 43.09355kNm
 REAL(4), PARAMETER           :: VS_Rgn2K      	=	2.332287                  	! Generator torque constant in Region 2 (HSS side), N-m/(rad/s)^2.
@@ -118,10 +118,10 @@ INTEGER(4)                   :: I                                               
 INTEGER(4)                   :: iStatus                                         ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
 INTEGER(4)                   :: K                                               ! Loops through blades.
 INTEGER(4)                   :: NumBl                                           ! Number of blades, [-].
-INTEGER(4), PARAMETER        :: UnDb          = 85                              ! I/O unit for the debugging information
-INTEGER(4), PARAMETER        :: UnDb2         = 86                              ! I/O unit for the debugging information
-INTEGER(4), PARAMETER        :: Un            = 87                              ! I/O unit for pack/unpack (checkpoint & restart)
-INTEGER(4), PARAMETER        :: UnUser        = 88                              ! I/O unit for user defined parameter file
+INTEGER(4), PARAMETER        :: UnDb          	= 85                            ! I/O unit for the debugging information
+INTEGER(4), PARAMETER        :: UnDb2         	= 86                            ! I/O unit for the debugging information
+INTEGER(4), PARAMETER        :: Un            	= 87                            ! I/O unit for pack/unpack (checkpoint & restart)
+INTEGER(4), PARAMETER        :: UnUser        	= 88                            ! I/O unit for user defined parameter file
 
 LOGICAL(1), PARAMETER        :: DbgOut     = .TRUE.                          	! Flag to indicate whether to output debugging information
 INTEGER(4)                   :: GenTrq_Reg               ! Temporary debug variable
