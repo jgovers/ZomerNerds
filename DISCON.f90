@@ -113,6 +113,9 @@ REAL(4), PARAMETER           :: Y_omegaLPFast 	=	1.0							! Corner frequency fa
 REAL(4), PARAMETER           :: Y_omegaLPSlow 	=	0.016666667					! Corner frequency slow low pass filter
 REAL(4), SAVE                :: Y_YawEndT										! Yaw end time. Indicates the time up until which the yaws with a fixed rate
 
+REAL(4), SAVE			::	TEST_integral    ! Keeps track of the integral
+REAL(4)                 ::  TEST_PI
+
 INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
 INTEGER(4)                   :: iStatus                                         ! A status flag set by the simulation as follows: 0 if this is the first call, 1 for all subsequent time steps, -1 if this is the final call at the end of the simulation.
@@ -323,14 +326,14 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 							'PitRate1    '//Tab//'PitRate2    '//Tab//'PitRate3    '//Tab//'PitCom1    '//Tab//'PitCom2    '//Tab//'PitCom3    '//Tab// &
 							'BlPitch1    '//Tab//'BlPitch2    '//Tab//'BlPitch3    '//Tab//'rootMOOP1  '//Tab//'rootMOOP2  '//Tab//'rootMOOP3  '//Tab// &
 							'IPC_PitComF1'//Tab//'IPC_PitComF2'//Tab//'IPC_PitComF3'//Tab//'Y_MErr     '//Tab//'Y_ErrLPFFast'//Tab//'Y_ErrLPFSlow'//Tab//&
-							'Y_AccErr    '//Tab//'Y_YawEndT   '//Tab//'GenTrq_Reg '//Tab//'P_enabled   '
+							'Y_AccErr    '//Tab//'Y_YawEndT   '//Tab//'GenTrq_Reg '//Tab//'P_enabled   '//Tab//'TEST_PI     '//Tab//'TEST_integral'
 
 		WRITE (UnDb,'(A)')  '(sec)       '//Tab//'(sec)       '//Tab//'(m/sec)     '//Tab//'(rpm)      '//Tab//'(rpm)      '//Tab//'(%)        '//Tab// &
 							'(rad/s)     '//Tab//'(rad)       '//Tab//'(-)         '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
 							'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg/s)     '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
 							'(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab//'(Nm)       '//Tab// &
 							'(deg)       '//Tab//'(deg)       '//Tab//'(deg)       '//Tab//'(deg)      '//Tab//'(deg)      '//Tab//'(deg)      '//Tab// &
-							'(deg*s)     '//Tab//'(sec)       '//Tab//'(-)         '//Tab//'(-)        '
+							'(deg*s)     '//Tab//'(sec)       '//Tab//'(-)         '//Tab//'(-)        '//Tab//'(Nm)        '//Tab//'(Nms?)        '
 
 		OPEN ( UnDb2, FILE=TRIM( RootName )//'.dbg2', STATUS='REPLACE' )
 		WRITE (UnDb2,'(/////)')
@@ -408,6 +411,17 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 !         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
          GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, VS_RtTq)
          GenTrq_Reg = 5
+
+
+        IF ( iStatus == 0 ) TEST_integral = 0		! Instantiate the integral on the first call
+
+        TEST_integral = TEST_integral + VS_Ki*(VS_RtGnSp - GenSpeedF)*DT		! Integrate
+        TEST_integral = saturate(TEST_integral, 0.0, VS_RtTq)
+
+        TEST_PI = VS_Kp*(VS_RtGnSp - GenSpeedF) + TEST_integral 			    ! Calculate output
+        TEST_PI = saturate(TEST_PI, 0.0, VS_RtTq)
+
+
       ENDIF
 
 		! Saturate the commanded torque using the maximum torque limit:
@@ -555,8 +569,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 							 SpdErr,		IntSpdErr,		GK,			PitComP*R2D,		PitComI*R2D,		PitComT*R2D,            &
 							 PitRate*R2D,								PitCom*R2D,														&
 							 BlPitch*R2D,								rootMOOP,														&
-							 IPC_PitComF*R2D,							Y_MErr*R2D,		Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,			&
-							 Y_AccErr*R2D,  Y_YawEndT,		GenTrq_Reg, P_enabled
+							 IPC_PitComF*R2D,							Y_MErr*R2D,		    Y_ErrLPFFast*R2D,	Y_ErrLPFSlow*R2D,		&
+							 Y_AccErr*R2D,  Y_YawEndT,		GenTrq_Reg, P_enabled,          TEST_PI,            TEST_integral
 
 		WRITE (UnDb2,FmtDat) Time, avrSWAP(1:85)
 	END IF

@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-timeStamp = '2017_08_16_1128';               % set to 'rc' to just get the most recent folder
+timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
