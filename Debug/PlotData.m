@@ -93,6 +93,13 @@ plot(db.Time,db.PitComT1)
 legend('PitCom1','BlPitch1','PitComT')
 
 s(4) = subplot(4,1,4);
+title('PI value and integral')
+hold on
+plot(db.Time,db.TEST_PI)
+plot(db.Time,db.TEST_integral)
+legend('PI','integral')
+
+figure
 title('Speed error integral')
 hold on
 plot(db.Time,db.IntSpdErr)
