@@ -95,7 +95,7 @@ legend('rootMOOP1')
 figure
 title('PitComIPC')
 hold on
-plot(db.Time,db.IPC_PitComF1)
+plot(db.Time,db.PitComF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
 legend('PitComIPCF1')
@@ -133,19 +133,19 @@ legend('HorWindV')
 figure
 title('Measured yaw error')
 hold on
-plot(db.Time,db.Y_MErr)
-plot(db.Time,db.Y_ErrLPFFast)
-plot(db.Time,db.Y_ErrLPFSlow)
+plot(db.Time,db.MErr)
+plot(db.Time,db.ErrLPFFast)
+plot(db.Time,db.ErrLPFSlow)
 plot(db.Time,rad2deg(avrSWAP(:,37)))
-legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
+legend('MErr','ErrLPFFast','ErrLPFSlow','Turibine yaw')
 
 figure
 title('Integral of fast yaw error')
 hold on
 grid on
-plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.ErrLPFFast)
 plot(db.Time,db.Y_AccErr)
-legend('Y ErrLPFFast','Y AccErr')
+legend('ErrLPFFast','AccErr')
 
 % figure
 % title('Yaw Rate')
