@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
+timeStamp = '2017_08_16_1128';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -51,6 +51,7 @@ end
 
 %% Plotting
 figure
+s(1)=subplot(4,1,1);
 title('GenSpeed')
 hold on
 plot(db.Time,db.GenSpeed)
@@ -61,9 +62,7 @@ plot(db.Time,db.SpdErr)
 ylabel('Speed [rpm]')
 legend('GenSpeed','GenSpeedF','SpdErr')
 
-
-figure
-s(1)=subplot(3,1,1);
+s(2)=subplot(4,1,2);
 title('GenTorque')
 hold on
 plot(avrTime,avrSWAP(:,47))
@@ -82,7 +81,7 @@ legend('GenTrq', 'Torque Region')
 % subplot(2,1,2), plot(Time,PitRate1)
 % legend('PitRate1')
 % 
-s(2)=subplot(3,1,2);
+s(3)=subplot(4,1,3);
 title('Pitch')
 hold on
 plot(db.Time,db.PitCom1)
@@ -93,7 +92,7 @@ plot(db.Time,db.PitComT1)
 % plot(Time,GenTrq)
 legend('PitCom1','BlPitch1','PitComT')
 
-s(3) = subplot(3,1,3);
+s(4) = subplot(4,1,4);
 title('Speed error integral')
 hold on
 plot(db.Time,db.IntSpdErr)
