@@ -126,6 +126,7 @@ INTEGER(4), PARAMETER        :: UnUser        	= 88                            !
 LOGICAL(1), PARAMETER        :: DbgOut     = .TRUE.                          	! Flag to indicate whether to output debugging information
 REAL(4)		                 :: GenTrq_Reg               ! Temporary debug variable
 REAL(4)		                 :: P_enabled                ! Temporary debug variable
+REAL(4)						 :: foo
 
 CHARACTER(   1), PARAMETER   :: Tab           = CHAR( 9 )                       ! The tab character.
 CHARACTER(  25), PARAMETER   :: FmtDat    = "(F8.3,99('"//Tab//"',ES10.3E2,:))"	! The format of the debugging data
@@ -389,15 +390,19 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
       IF (  PitCom(1) >= VS_Rgn3MP )  THEN ! We are in region 3 - power is constant
          GenTrq = VS_RtTq
+         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 1
       ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
          GenTrq = 0.0
+         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 2
       ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
          GenTrq = VS_Slope15*( GenSpeedF - VS_CtInSp )
+         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 3
       ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
          GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
+         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 4
       ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
 !         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
@@ -447,13 +452,13 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 	GK = 1.0/( 1.0 + PitCom(1)/PC_KK )
 
-   IF ( GenTrq >= (0.99*VS_RtTq) )  THEN
+!   IF ( GenTrq >= (0.99*VS_RtTq) )  THEN
      PC_VarMaxPit = PC_MaxPit
      P_enabled = 1
-   ELSE
-     PC_VarMaxPit = PC_SetPnt
-     P_enabled = 0
-   END IF
+!   ELSE
+!     PC_VarMaxPit = PC_SetPnt
+!     P_enabled = 0
+!   END IF
 
 !	PC_VarMaxPit = PC_MaxPit
 
