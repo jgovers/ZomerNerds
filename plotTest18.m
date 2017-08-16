@@ -10,12 +10,13 @@ clc
 %% Settings
 totalTime = tic;
 testFile = 'Test18.out';      % Name of the test file to read
-runCmdFromHere = false;          % Run the RunTest18.cmd file from this matlab script
+runCmdFromHere = false;       % Run RunTest18.cmd from this matlab script
 
 %% Loading
-if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
+if(runCmdFromHere)
     dos('RunTest18.cmd');
 end       
+
 dataRaw = dlmread([debugFolder testFile],'\t',8,0);
 [~,vars] = size(dataRaw);
 fid = fopen([debugFolder testFile]);
@@ -27,7 +28,8 @@ for i = 1:vars
 end
 
 %% Plotting
-% calculate total wind
+
+% calculate total wind velocity
 Wind1VelTot = sqrt(data.Wind1VelX.^2+data.Wind1VelY.^2+data.Wind1VelZ.^2);
 
 % Plot different wind velocities
