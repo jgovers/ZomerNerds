@@ -2,13 +2,14 @@
 
 echo off
 
+set "FASTdir=C:\FAST"
+
 C:
 :: Remove old .dll file
-DEL C:\FAST\CertTest\5MW_Baseline\ServoData\DISCON_gwin32.dll
+DEL %FASTdir%\CertTest\5MW_Baseline\ServoData\DISCON_gwin32.dll
 
 :: Compile
-cd C:\FAST\Compiling
-echo on
+cd %FASTdir%\Compiling
 mingw32-make.exe
 
 :: Run

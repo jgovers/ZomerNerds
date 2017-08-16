@@ -2,10 +2,12 @@
 
 echo off
 
+set "FASTdir=C:\FAST"
+
 C:
 
 :: Run
-cd C:\FAST\CertTest
+cd %FASTdir%\CertTest
 echo on
 FAST_x64.exe Test18.SL.fst
 
