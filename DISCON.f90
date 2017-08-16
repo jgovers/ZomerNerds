@@ -426,7 +426,6 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 
       ENDIF
-TEST_SpdErr     =
 		! Saturate the commanded torque using the maximum torque limit:
 
 	GenTrq  = MIN( GenTrq , VS_MaxTq  )						! Saturate the command using the maximum torque limit
