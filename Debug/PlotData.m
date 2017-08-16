@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-timeStamp = '2017_08_16_1128';               % set to 'rc' to just get the most recent folder
+timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -93,6 +93,13 @@ plot(db.Time,db.PitComT1)
 legend('PitCom1','BlPitch1','PitComT')
 
 s(4) = subplot(4,1,4);
+title('PI value and integral')
+hold on
+plot(db.Time,db.TEST_PI)
+plot(db.Time,db.TEST_integral)
+legend('PI','integral')
+
+figure
 title('Speed error integral')
 hold on
 plot(db.Time,db.IntSpdErr)
