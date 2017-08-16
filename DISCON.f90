@@ -115,6 +115,7 @@ REAL(4), SAVE                :: Y_YawEndT										! Yaw end time. Indicates the
 
 REAL(4), SAVE			::	TEST_integral    ! Keeps track of the integral
 REAL(4)                 ::  TEST_PI
+REAL(4)                 ::  TEST_SpdErr
 
 INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
@@ -387,29 +388,29 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 		! Compute the elapsed time since the last call to the controller:
 
-	ElapTime = Time - LastTimeVS
-
+	ElapTime        = Time - LastTimeVS
+    TEST_SpdErr     =  GenSpeedF - VS_RtGnSp
 		! Compute the generator torque, which depends on which region we are in:
 
       IF (  PitCom(1) >= VS_Rgn3MP )  THEN ! We are in region 3 - power is constant
          GenTrq = VS_RtTq
-         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
+         foo = PI( GenSpeedF - VS_RtGnSp , VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 1
       ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
          GenTrq = 0.0
-         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
+         foo = PI( GenSpeedF - VS_RtGnSp , VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 2
       ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
          GenTrq = VS_Slope15*( GenSpeedF - VS_CtInSp )
-         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
+         foo = PI( GenSpeedF - VS_RtGnSp , VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 3
       ELSEIF ( GenSpeedF <  VS_TrGnSp )  THEN                                    ! We are in region 2 - optimal torque is proportional to the square of the generator speed
          GenTrq = VS_Rgn2K*GenSpeedF*GenSpeedF
-         foo = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
+         foo = PI( GenSpeedF - VS_RtGnSp , VS_Kp, VS_Ki, DT, iStatus, 0.0, 0.0)
          GenTrq_Reg = 4
       ELSE                                                                       ! We are in region 2 1/2 - simple induction generator transition region
 !         GenTrq = VS_Slope25*( GenSpeedF - VS_SySp   )
-         GenTrq = PI( VS_RtGnSp - GenSpeedF, VS_Kp, VS_Ki, DT, iStatus, 0.0, VS_RtTq)
+         GenTrq = PI( GenSpeedF - VS_RtGnSp , VS_Kp, VS_Ki, DT, iStatus, 0.0, VS_RtTq)
          GenTrq_Reg = 5
 
 
@@ -423,7 +424,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 
       ENDIF
-
+TEST_SpdErr     =
 		! Saturate the commanded torque using the maximum torque limit:
 
 	GenTrq  = MIN( GenTrq , VS_MaxTq  )						! Saturate the command using the maximum torque limit
