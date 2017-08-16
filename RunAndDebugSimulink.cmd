@@ -2,12 +2,9 @@
 
 echo off
 
-:: Change this to the absolute path if this script is not located in \CertTest\5MW_Baseline\ServoData\Source. In that
-:: case also make sure the correct drive is selected 
-set "FASTdir=..\..\..\.."
+set "FASTdir=C:\FAST"
 
-:: Go to the correct drive
-:: C:
+C:
 
 :: Run
 cd %FASTdir%\CertTest
