@@ -11,9 +11,7 @@ clc
 % directory you want to import and plot
 timeStamp = '2017_08_17_1448';
 % Run the CompileRunAndDebug.cmd file from this matlab script
-runCmdFromHere = false;
-% Automatically save all figures in the debug folder
-saveAllFigures = false;             
+runCmdFromHere = false;            
 
 %% Loading
 totalTime = tic;
@@ -170,19 +168,3 @@ legend('HorWindV')
 % plot(db.Time,db.Y_YawEndT)
 % plot(db.Time,db.Time)
 % legend('YawEndT','Time')
-
-%% Save figures
-% if saveAllFigures is true all figures currently opened get saved into the
-% current debug folder
-
-if(saveAllFigures)
-    figArray=findall(0,'type','figure');
-    for i = 1:length(figArray)
-        figure(figArray(i).Number)
-        saveas(figArray(i),[debugFolder 'fig' get(get(gca,'title'),'string') '.fig']);
-    end
-    disp(['Saved all figures to ' debugFolder(1:end-1)]);
-end
-
-disp(['Folder: ' debugFolder])
-toc(totalTime)
