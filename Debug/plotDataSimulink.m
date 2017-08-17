@@ -5,8 +5,8 @@ clc
 
 %% Settings
 totalTime = tic;
-timeStamp = '2017_08_16_1758';               % set to 'rc' to just get the most recent folder
-testFile = 'Test18.SL.out';      % Name of the test file to read
+timeStamp = '2017_08_17_1607';               % set to 'rc' to just get the most recent folder
+testFile = 'Test18.out';      % Name of the test file to read
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = true;          % Automatically save all figures in the debug folder
 

@@ -34,6 +34,6 @@ copy Test18.SrvD.dbg2 %dbFolder%\Test18.SrvD.dbg2
 copy Test18.sum %dbFolder%\Test18.sum
 copy Test18.AD.sum %dbFolder%\Test18.AD.sum
 copy Test18.ED.sum %dbFolder%\Test18.ED.sum
-copy Test18.outb %dbFolder%\Test18.out
+copy Test18.out %dbFolder%\Test18.out
 
 echo %dbFolder%
