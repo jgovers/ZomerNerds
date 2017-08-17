@@ -139,22 +139,22 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
-figure
-title('Measured yaw error')
-hold on
-plot(db.Time,db.MErr)
-plot(db.Time,db.ErrLPFFast)
-plot(db.Time,db.ErrLPFSlow)
-plot(db.Time,rad2deg(avrSWAP(:,37)))
-legend('MErr','ErrLPFFast','ErrLPFSlow','Turibine yaw')
-
-figure
-title('Integral of fast yaw error')
-hold on
-grid on
-plot(db.Time,db.ErrLPFFast)
-plot(db.Time,db.Y_AccErr)
-legend('ErrLPFFast','AccErr')
+% figure
+% title('Measured yaw error')
+% hold on
+% plot(db.Time,db.MErr)
+% plot(db.Time,db.ErrLPFFast)
+% plot(db.Time,db.ErrLPFSlow)
+% plot(db.Time,rad2deg(avrSWAP(:,37)))
+% legend('MErr','ErrLPFFast','ErrLPFSlow','Turibine yaw')
+% 
+% figure
+% title('Integral of fast yaw error')
+% hold on
+% grid on
+% plot(db.Time,db.ErrLPFFast)
+% plot(db.Time,db.Y_AccErr)
+% legend('ErrLPFFast','AccErr')
 
 % figure
 % title('Yaw Rate')
@@ -163,19 +163,19 @@ legend('ErrLPFFast','AccErr')
 % plot(db.Time,avrSWAP(:,48))
 % legend('Yaw Rate')
 
-figure
-title('YawTorque')
-hold on
-grid on
-plot(avrTime,avrSWAP(:,41))
-legend('YawTorque')
-
-figure
-title('Yaw end time')
-hold on
-plot(db.Time,db.Y_YawEndT)
-plot(db.Time,db.Time)
-legend('YawEndT','Time')
+% figure
+% title('YawTorque')
+% hold on
+% grid on
+% plot(avrTime,avrSWAP(:,41))
+% legend('YawTorque')
+% 
+% figure
+% title('Yaw end time')
+% hold on
+% plot(db.Time,db.Y_YawEndT)
+% plot(db.Time,db.Time)
+% legend('YawEndT','Time')
 
 %% Save figures
 % if saveAllFigures is true all figures currently opened get saved into the
