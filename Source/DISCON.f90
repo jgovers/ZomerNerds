@@ -504,23 +504,24 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 	!..............................................................................................................................
 
 
-	IF ( Y_YawEndT <= Time) THEN
-		avrSWAP(48) = 0.0
+	avrSWAP(29)	= 0				    ! Yaw control parameter: 0 = yaw rate control
 
-		Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
-		Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
+	IF ( Y_YawEndT <= Time) THEN    ! Check if the turbine is currently yawing
+		avrSWAP(48) = 0.0                                                   ! Set yaw rate to zero
 
-		Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)
+		Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)  ! Fast low pass filtered yaw error with a frequency of 1
+		Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)  ! Slow low pass filtered yaw error with a frequency of 1/60
 
-		IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN
-			Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time
+		Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)   ! Integral of the fast low pass filtered yaw error
+
+		IF ( ABS(Y_AccErr) >= Y_ErrThresh ) THEN                            ! Check if accumulated error surpasses the threshold
+			Y_YawEndT   = ABS(Y_ErrLPFSlow/Y_YawRate) + Time                ! Yaw to compensate for the slow low pass filtered error
 		END IF
 	ELSE
-		avrSWAP(29)		= 0													! Yaw control parameter: 0 = yaw rate control
-		avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)
-		Y_ErrLPFFast    = 0.0
-		Y_ErrLPFSlow    = 0.0
-		Y_AccErr        = 0.0
+		avrSWAP(48)		= SIGN(Y_YawRate,Y_MErr)    ! Set yaw rate to predefined yaw rate, the sign of the error is copied to the rate
+		Y_ErrLPFFast    = 0.0                       ! Reset all errors
+		Y_ErrLPFSlow    = 0.0                       ! "
+		Y_AccErr        = 0.0                       ! "
 	END IF
 
 
