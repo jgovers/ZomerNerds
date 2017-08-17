@@ -1,45 +1,57 @@
+%% PlotDebugData
+% Imports and plots data from dbg and dbg2 files
+
 %% Cleaning
 close all
 clearvars
 clc
 
 %% Settings
-timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
-runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
-saveAllFigures = false;          % Automatically save all figures in the debug folder
+% set timeStamp (format: YYYY_MM_DD_TTTT or 2017_01_01_1200) to the test 
+% directory you want to import and plot or set to 'rc' to just import the 
+% most recent directory
+timeStamp = 'rc';
+% Run the CompileRunAndDebug.cmd file from this matlab script
+runCmdFromHere = false;
+% Automatically save all figures in the debug folder
+saveAllFigures = false;             
 
 %% Loading
 totalTime = tic;
 if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
-    [~,output] = dos('..\CompileRunAndDebug.cmd', '-echo');
+    
+    [~,output] = dos('CompileRunAndDebug.cmd', '-echo');
     i = strfind(output,'C:');
     i = i(end);
     debugFolder = [output(i:end-1) '\'];
     clearvars output TimeStamp
+    
 else                % otherwise get the debugfolder with the manual timestamp
-    [~, userprofile] = dos('echo %USERPROFILE%');
-    debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\'];
+    
     if strcmp(timeStamp,'rc')   % if the timeStamp is rc, search for the most recent folder
-        d = dir(debugFolder);
+        d = dir;
         [~,order] = sort([d.datenum]);
         timeStamp = d(order==1).name;
     end
-    debugFolder = [debugFolder timeStamp '\'];
-    clearvars userprofile d order
+    debugFolder = [timeStamp '\'];
+    clearvars d order
+    
 end
 
 % Import data from Test18.out and put in the debug structure
 dbRaw = dlmread([debugFolder 'Test18.SrvD.dbg'],'\t',8,0);
 [~,vars] = size(dbRaw);
+
 fid = fopen([debugFolder 'Test18.SrvD.dbg']);
 header = textscan(fid,'%s','delimiter','\t');
 fclose(fid);
+
 header = strtrim(header{1,1}(1:vars));
 for i = 1:vars
     db.(header{i}) = dbRaw(:,i);
 end
 
-% Read avrSWAP debug file 
+% Import avrSWAP debug file 
     avrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
     avrTime = avrSWAP(:,1);
     avrSWAP = avrSWAP(:,2:end);
