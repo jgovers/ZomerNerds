@@ -2,13 +2,14 @@
 
 echo off
 
+set "FASTdir=C:\FAST"
+
 C:
 :: Remove old .dll file
-DEL C:\FAST\CertTest\5MW_Baseline\ServoData\DISCON_gwin32.dll
+DEL %FASTdir%\CertTest\5MW_Baseline\ServoData\DISCON_gwin32.dll
 
 :: Compile
-cd C:\FAST\Compiling
-echo on
+cd %FASTdir%\Compiling
 mingw32-make.exe
 
 :: Run
@@ -33,6 +34,6 @@ copy Test18.SrvD.dbg2 %dbFolder%\Test18.SrvD.dbg2
 copy Test18.sum %dbFolder%\Test18.sum
 copy Test18.AD.sum %dbFolder%\Test18.AD.sum
 copy Test18.ED.sum %dbFolder%\Test18.ED.sum
-copy Test18.outb %dbFolder%\Test18.out
+copy Test18.out %dbFolder%\Test18.out
 
 echo %dbFolder%

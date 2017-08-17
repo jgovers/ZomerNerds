@@ -1,10 +1,10 @@
 %% Cleaning
-% close all
+close all
 clearvars
 clc
 
 %% Settings
-timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
+timeStamp = '2017_08_17_1030';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -40,7 +40,6 @@ header = strtrim(header{1,1}(1:vars));
 for i = 1:vars
     db.(header{i}) = dbRaw(:,i);
 end
-clearvars fid vars header
 
 if(doAvrSwap)
     avrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
@@ -51,27 +50,17 @@ end
 
 %% Plotting
 figure
-s(1)=subplot(4,1,1);
 title('GenSpeed')
 hold on
 plot(db.Time,db.GenSpeed)
 plot(db.Time,db.GenSpeedF)
+legend('GenSpeed','GenSpeedF')
 ylabel('Speed [rpm]')
-yyaxis right
-plot(db.Time,db.SpdErr)
-ylabel('Speed [rpm]')
-legend('GenSpeed','GenSpeedF','SpdErr')
 
-s(2)=subplot(4,1,2);
+figure
 title('GenTorque')
 hold on
 plot(avrTime,avrSWAP(:,47))
-ylabel('Torque [Nm]')
-yyaxis right
-plot(db.Time,db.GenTrq_Reg,'LineWidth',2)
-ylabel('Torque region')
-yyaxis left
-legend('GenTrq', 'Torque Region')
 
 % figure
 % title('Pitch')
@@ -81,7 +70,7 @@ legend('GenTrq', 'Torque Region')
 % subplot(2,1,2), plot(Time,PitRate1)
 % legend('PitRate1')
 % 
-s(3)=subplot(4,1,3);
+figure
 title('Pitch')
 hold on
 plot(db.Time,db.PitCom1)
@@ -91,25 +80,6 @@ plot(db.Time,db.PitComT1)
 % plot(Time,PitComT)
 % plot(Time,GenTrq)
 legend('PitCom1','BlPitch1','PitComT')
-
-s(4) = subplot(4,1,4);
-title('PI value and integral')
-hold on
-plot(db.Time,db.TEST_PI)
-plot(db.Time,db.TEST_integral)
-yyaxis right
-plot(db.Time,db.TEST_SpdErr)
-legend('PI','integral','Speed error')
-
-figure
-title('Speed error integral')
-hold on
-plot(db.Time,db.IntSpdErr)
-yyaxis right
-plot(db.Time,db.GK)
-yyaxis left
-legend('Integral','gain correction factor')
-linkaxes(s,'x')
 
 figure
 title('rootMOOP')
@@ -125,7 +95,7 @@ legend('rootMOOP1')
 figure
 title('PitComIPC')
 hold on
-plot(db.Time,db.IPC_PitComF1)
+plot(db.Time,db.PitComF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
 legend('PitComIPCF1')
@@ -160,23 +130,22 @@ legend('HorWindV')
 % plot(Time,PitCom3)
 % legend('PitCom1','PitCom2','PitCom3')
 % 
+figure
+title('Measured yaw error')
+hold on
+plot(db.Time,db.MErr)
+plot(db.Time,db.ErrLPFFast)
+plot(db.Time,db.ErrLPFSlow)
+plot(db.Time,rad2deg(avrSWAP(:,37)))
+legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
 
-% figure
-% title('Measured yaw error')
-% hold on
-% plot(db.Time,db.Y_MErr)
-% plot(db.Time,db.Y_ErrLPFFast)
-% plot(db.Time,db.Y_ErrLPFSlow)
-% plot(db.Time,rad2deg(avrSWAP(:,37)))
-% legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
-
-% figure
-% title('Integral of fast yaw error')
-% hold on
-% grid on
-% plot(db.Time,db.Y_ErrLPFFast)
-% plot(db.Time,db.Y_AccErr)
-% legend('Y ErrLPFFast','Y AccErr')
+figure
+title('Integral of fast yaw error')
+hold on
+grid on
+plot(db.Time,db.ErrLPFFast)
+plot(db.Time,db.Y_AccErr)
+legend('Y ErrLPFFast','Y AccErr')
 
 % figure
 % title('Yaw Rate')
@@ -185,35 +154,61 @@ legend('HorWindV')
 % plot(db.Time,avrSWAP(:,48))
 % legend('Yaw Rate')
 
-% figure
-% title('YawTorque')
-% hold on
-% grid on
-% plot(avrTime,avrSWAP(:,41))
-% legend('YawTorque')
+figure
+title('YawTorque')
+hold on
+grid on
+plot(avrTime,avrSWAP(:,41))
+legend('YawTorque')
 
-% figure
-% title('Integral of fast yaw error')
-% hold on
-% grid on
-% plot(db.Time,db.Y_ErrLPFFast)
-% plot(db.Time,db.Y_AccErr)
-% plot(db.Time,db.YawTest)
-% legend('Y ErrLPFFast','Y AccErr','YawTest')
+figure
+title('Yaw end time')
+hold on
+plot(db.Time,db.Y_YawEndT)
+plot(db.Time,db.Time)
+legend('YawEndT','Time')
+
+%% Other figures
+figure;
+title('Wind Velocity')
+hold on
+plot(db.Time,db.HorWindV)
+ylabel('Wind velocity [m/s]')
+legend('x')
+
+figure;
+title('Rotor and Generator Speed')
+hold on
+plot(db.Time,avrSWAP(:,21))
+ylabel('Rotor speed [rpm]')
+yyaxis right
+plot(db.Time,db.GenSpeed)
+ylabel('Generator speed [rpm]')
+
+figure;
+title('Generator Torque')
+hold on
+plot(db.Time,avrSWAP(:,47))
+ylabel('Torque [kN*m]')
+
+figure;
+title('BldPitch1')
+hold on
+plot(db.Time,db.BlPitch1)
+ylabel('Pitch [deg]')
+
+
+% RootMtotb1 = sqrt(out.RootMxb1.^2 + out.RootMyb1.^2 + out.RootMzb1.^2);
 % 
 % figure
-% title('YawTest')
+% title('Blade 1 root bending moments')
 % hold on
-% grid on
-% plot(db.Time,db.YawTest)
-% legend('YawTest')
-% 
-% figure
-% title('Yaw end time')
-% hold on
-% plot(db.Time,db.Y_YawEndT)
-% plot(db.Time,db.Time)
-% legend('YawEndT','Time')
+% plot(out.Time,out.RootMxb1)
+% plot(out.Time,out.RootMyb1)
+% plot(out.Time,out.RootMzb1)
+% plot(out.Time,RootMtotb1)
+% ylabel('Moment [kN*m]')
+% legend('x','y','z','total')
 
 %% FFT
 % figure
@@ -233,4 +228,4 @@ if(saveAllFigures)
 end
 
 disp(['Folder: ' debugFolder])
-toc(totalTime); clearvars totalTime i;
+toc(totalTime)
