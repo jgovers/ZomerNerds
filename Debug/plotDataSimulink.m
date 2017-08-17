@@ -5,8 +5,8 @@ clc
 
 %% Settings
 totalTime = tic;
-timeStamp = '2017_08_17_1607';               % set to 'rc' to just get the most recent folder
-testFile = 'Test18.out';      % Name of the test file to read
+timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
+testFile = 'Test18.SL.out';      % Name of the test file to read
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = true;          % Automatically save all figures in the debug folder
 
@@ -89,6 +89,7 @@ if(saveAllFigures)
     for i = 1:length(figArray)
         figure(figArray(i).Number)
         saveas(figArray(i),[debugFolder 'fig' get(get(gca,'title'),'string') '.fig']);
+        saveas(figArray(i),[debugFolder 'fig' get(get(gca,'title'),'string') '.png']);
     end
     disp(['Saved all figures to ' debugFolder(1:end-1)]);
 end
