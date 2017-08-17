@@ -9,23 +9,29 @@ clc
 
 %% Settings
 totalTime = tic;
-testFile = 'Test18.out';      % Name of the test file to read
-runCmdFromHere = false;       % Run RunTest18.cmd from this matlab script
+testFile = 'Test18.out';        % Name of the test file to read
+runCmdFromHere = false;         % Run RunTest18.cmd from this matlab script
 
 %% Loading
-if(runCmdFromHere)
+debugFolder = '..\..\..\';      % Directory were .out file is located
+
+if(runCmdFromHere)              % Run Test18 first if true
     dos('RunTest18.cmd');
 end       
 
+% Import data from Test18.out and put in the data structure
 dataRaw = dlmread([debugFolder testFile],'\t',8,0);
 [~,vars] = size(dataRaw);
 fid = fopen([debugFolder testFile]);
 header = textscan(fid,'%s','delimiter','\t');
 fclose(fid);
+
 header = strtrim(header{1,1}(4:vars+3));
 for i = 1:vars
     data.(header{i}) = dataRaw(:,i);
 end
+
+clearvars vars
 
 %% Plotting
 

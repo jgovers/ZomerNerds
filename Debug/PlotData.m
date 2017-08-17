@@ -5,7 +5,6 @@ clc
 
 %% Settings
 timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
-doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
 
@@ -16,7 +15,7 @@ if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     i = strfind(output,'C:');
     i = i(end);
     debugFolder = [output(i:end-1) '\'];
-    clearvars index output TimeStamp
+    clearvars output TimeStamp
 else                % otherwise get the debugfolder with the manual timestamp
     [~, userprofile] = dos('echo %USERPROFILE%');
     debugFolder = [userprofile(1:end-1) '\Dropbox\ZomerNerds\Debug\'];
@@ -29,8 +28,7 @@ else                % otherwise get the debugfolder with the manual timestamp
     clearvars userprofile d order
 end
 
-
-% dbRaw = tdfread([debugFolder 'Test18.SrvD.dbg']);
+% Import data from Test18.out and put in the debug structure
 dbRaw = dlmread([debugFolder 'Test18.SrvD.dbg'],'\t',8,0);
 [~,vars] = size(dbRaw);
 fid = fopen([debugFolder 'Test18.SrvD.dbg']);
@@ -41,11 +39,10 @@ for i = 1:vars
     db.(header{i}) = dbRaw(:,i);
 end
 
-if(doAvrSwap)
+% Read avrSWAP debug file 
     avrSWAP = dlmread([debugFolder 'Test18.SrvD.dbg2'],'\t',8,0);
     avrTime = avrSWAP(:,1);
     avrSWAP = avrSWAP(:,2:end);
-end
 
 
 %% Plotting
@@ -168,14 +165,10 @@ plot(db.Time,db.Y_YawEndT)
 plot(db.Time,db.Time)
 legend('YawEndT','Time')
 
-%% FFT
-% figure
-% FFTrootMOOP1    = fft(rootMOOP1);
-% Pyy             = FFTrootMOOP1.*conj(FFTrootMOOP1);
-% % f               = 1000/251*(0:127);
-% plot(Pyy(2:50))
-
 %% Save figures
+% if saveAllFigures is true all figures currently opened get saved into the
+% current debug folder
+
 if(saveAllFigures)
     figArray=findall(0,'type','figure');
     for i = 1:length(figArray)
