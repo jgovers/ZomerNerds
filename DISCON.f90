@@ -55,8 +55,8 @@ REAL(4)                      :: HorWindV                                        
 REAL(4)                      :: IPC_aziAngle                                 	! Rotor azimuth angle [rad].
 REAL(4), PARAMETER           :: IPC_KI          =	0.0000000008                ! Integral gain for the individual pitch controller, [-].
 REAL(4), PARAMETER           :: IPC_KNotch      =	1                           ! Notch filter gain for the individual pitch controller, [-].
-REAL(4), PARAMETER           :: IPC_omegaLP     =	1000.0                      ! Low pass filter corner frequency for the individual pitch controller, [rad/s].
-REAL(4), PARAMETER           :: IPC_omegaNotch  =	1.269330365                 ! Notch filter corner frequency for the individual pitch controller, [rad/s].
+REAL(4), PARAMETER           :: IPC_omegaLP     =	1000.0                      ! Low pass filter corner frequency for the individual pitch controller, [Hz].
+REAL(4), PARAMETER           :: IPC_omegaNotch  =	1.269330365                 ! Notch filter corner frequency for the individual pitch controller, [Hz].
 REAL(4), PARAMETER           :: IPC_phi         =	0.436332313                 ! Phase offset added to the azimuth angle for the individual pitch controller, [rad].
 REAL(4)                      :: IPC_PitComF (3)                                 ! Commanded pitch of each blade as calculated by the individual pitch controller, F stands for low pass filtered, [rad].
 REAL(4), PARAMETER           :: IPC_zetaLP      =	1.0                         ! Low pass filter damping factor for the individual pitch controller, [-].
@@ -100,15 +100,15 @@ REAL(4), SAVE                :: VS_Slope25                                      
 REAL(4), PARAMETER           :: VS_SlPc       	=	10.0                       	! Rated generator slip percentage in Region 2 1/2, [%].
 REAL(4), SAVE                :: VS_SySp                                         ! Synchronous speed of region 2 1/2 induction generator, [rad/s].
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, [rad/s].
-REAL(4), SAVE                :: Y_AccErr										! Accumulated yaw error [rad]
-REAL(4)                      :: Y_ErrLPFFast									! Filtered yaw error by fast low pass filter [rad]
-REAL(4)                      :: Y_ErrLPFSlow									! Filtered yaw error by slow low pass filter [rad]
-REAL(4), PARAMETER           :: Y_ErrThresh   	=	1.745329252               	! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512)
-REAL(4), PARAMETER           :: Y_YawRate     	=	0.005235988               	! Yaw rate [rad/s]
-REAL(4)                      :: Y_MErr                                          ! Measured yaw error [rad]
-REAL(4), PARAMETER           :: Y_omegaLPFast 	=	1.0							! Corner frequency fast low pass filter
-REAL(4), PARAMETER           :: Y_omegaLPSlow 	=	0.016666667					! Corner frequency slow low pass filter
-REAL(4), SAVE                :: Y_YawEndT										! Yaw end time. Indicates the time up until which the yaws with a fixed rate
+REAL(4), SAVE                :: Y_AccErr										! Accumulated yaw error [rad].
+REAL(4)                      :: Y_ErrLPFFast									! Filtered yaw error by fast low pass filter [rad].
+REAL(4)                      :: Y_ErrLPFSlow									! Filtered yaw error by slow low pass filter [rad].
+REAL(4), PARAMETER           :: Y_ErrThresh   	=	1.745329252               	! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512).
+REAL(4), PARAMETER           :: Y_YawRate     	=	0.005235988               	! Yaw rate [rad/s].
+REAL(4)                      :: Y_MErr                                          ! Measured yaw error [rad].
+REAL(4), PARAMETER           :: Y_omegaLPFast 	=	1.0							! Corner frequency fast low pass filter, [Hz].
+REAL(4), PARAMETER           :: Y_omegaLPSlow 	=	0.016666667					! Corner frequency slow low pass filter, 1/60 [Hz].
+REAL(4), SAVE                :: Y_YawEndT										! Yaw end time, [s]. Indicates the time up until which the yaws with a fixed rate.
 
 INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
@@ -383,7 +383,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 		! Compute the generator torque, which depends on which region we are in:
 
 	IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
-		GenTrq = VS_RtTq/GenSpeedF
+		GenTrq = VS_RtPwr/GenSpeedF
 	ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
 		GenTrq = 0.0
 	ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
@@ -507,7 +507,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 	IF ( Y_YawEndT <= Time) THEN
 		avrSWAP(48) = 0.0
 
-		Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)
+		Y_ErrLPFFast    = LPFilter( Y_MErr, DT, Y_omegaLPFast, iStatus, 2)  !
 		Y_ErrLPFSlow    = LPFilter( Y_MErr, DT, Y_omegaLPSlow, iStatus, 3)
 
 		Y_AccErr = Y_AccErr + ElapTime*SIGN(Y_ErrLPFFast**2,Y_ErrLPFFast)

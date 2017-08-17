@@ -4,7 +4,7 @@ clearvars
 clc
 
 %% Settings
-timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
+timeStamp = '2017_08_17_1030';               % set to 'rc' to just get the most recent folder
 doAvrSwap = true;              % Read the avrSWAP debug file
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = false;          % Automatically save all figures in the debug folder
@@ -95,7 +95,7 @@ legend('rootMOOP1')
 figure
 title('PitComIPC')
 hold on
-plot(db.Time,db.IPC_PitComF1)
+plot(db.Time,db.PitComF1)
 % plot(Time,PitComIPCF2)
 % plot(Time,PitComIPCF3)
 legend('PitComIPCF1')
@@ -133,9 +133,9 @@ legend('HorWindV')
 figure
 title('Measured yaw error')
 hold on
-plot(db.Time,db.Y_MErr)
-plot(db.Time,db.Y_ErrLPFFast)
-plot(db.Time,db.Y_ErrLPFSlow)
+plot(db.Time,db.MErr)
+plot(db.Time,db.ErrLPFFast)
+plot(db.Time,db.ErrLPFSlow)
 plot(db.Time,rad2deg(avrSWAP(:,37)))
 legend('Y MErr','Y ErrLPFFast','Y ErrLPFSlow','Turibine yaw')
 
@@ -143,7 +143,7 @@ figure
 title('Integral of fast yaw error')
 hold on
 grid on
-plot(db.Time,db.Y_ErrLPFFast)
+plot(db.Time,db.ErrLPFFast)
 plot(db.Time,db.Y_AccErr)
 legend('Y ErrLPFFast','Y AccErr')
 
@@ -167,6 +167,48 @@ hold on
 plot(db.Time,db.Y_YawEndT)
 plot(db.Time,db.Time)
 legend('YawEndT','Time')
+
+%% Other figures
+figure;
+title('Wind Velocity')
+hold on
+plot(db.Time,db.HorWindV)
+ylabel('Wind velocity [m/s]')
+legend('x')
+
+figure;
+title('Rotor and Generator Speed')
+hold on
+plot(db.Time,avrSWAP(:,21))
+ylabel('Rotor speed [rpm]')
+yyaxis right
+plot(db.Time,db.GenSpeed)
+ylabel('Generator speed [rpm]')
+
+figure;
+title('Generator Torque')
+hold on
+plot(db.Time,avrSWAP(:,47))
+ylabel('Torque [kN*m]')
+
+figure;
+title('BldPitch1')
+hold on
+plot(db.Time,db.BlPitch1)
+ylabel('Pitch [deg]')
+
+
+% RootMtotb1 = sqrt(out.RootMxb1.^2 + out.RootMyb1.^2 + out.RootMzb1.^2);
+% 
+% figure
+% title('Blade 1 root bending moments')
+% hold on
+% plot(out.Time,out.RootMxb1)
+% plot(out.Time,out.RootMyb1)
+% plot(out.Time,out.RootMzb1)
+% plot(out.Time,RootMtotb1)
+% ylabel('Moment [kN*m]')
+% legend('x','y','z','total')
 
 %% FFT
 % figure
