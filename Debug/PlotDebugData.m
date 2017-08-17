@@ -8,9 +8,8 @@ clc
 
 %% Settings
 % set timeStamp (format: YYYY_MM_DD_TTTT or 2017_01_01_1200) to the test 
-% directory you want to import and plot or set to 'rc' to just import the 
-% most recent directory
-timeStamp = 'rc';
+% directory you want to import and plot
+timeStamp = '2017_08_17_1448';
 % Run the CompileRunAndDebug.cmd file from this matlab script
 runCmdFromHere = false;
 % Automatically save all figures in the debug folder
@@ -28,11 +27,6 @@ if(runCmdFromHere)  % Run CompileRunAndDebug.cmd and get the correct folder
     
 else                % otherwise get the debugfolder with the manual timestamp
     
-    if strcmp(timeStamp,'rc')   % if the timeStamp is rc, search for the most recent folder
-        d = dir;
-        [~,order] = sort([d.datenum]);
-        timeStamp = d(order==1).name;
-    end
     debugFolder = [timeStamp '\'];
     clearvars d order
     
