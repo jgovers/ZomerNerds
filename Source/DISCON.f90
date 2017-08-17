@@ -1,25 +1,28 @@
 !=======================================================================
+! SUBROUTINE DISCON ( avrSWAP, from_SC, to_SC, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, NAME='DISCON')
 SUBROUTINE DISCON ( avrSWAP, aviFAIL, accINFILE, avcOUTNAME, avcMSG ) BIND (C, NAME='DISCON')
 !DEC$ ATTRIBUTES DLLEXPORT :: DISCON
 
-   ! This Bladed-style DLL controller is used to implement a variable-speed
-   ! generator-torque controller and PI collective blade pitch controller for
-   ! the NREL Offshore 5MW baseline wind turbine.  This routine was written by
-   ! J. Jonkman of NREL/NWTC for use in the IEA Annex XXIII OC3 studies.
+   ! 18/08/2017
 
-   ! Modified by B. Jonkman to conform to ISO C Bindings (standard Fortran 2003) and
-   ! compile with either gfortran or Intel Visual Fortran (IVF)
+   ! This Bladed-style DLL controller is used to implement a variable-speed
+   ! generator-torque controller, PI collective blade pitch controller, individual pitch
+   ! controller and yaw controller for the NREL Offshore 5MW baseline wind turbine.
+   ! This routine was extended by S. Mulders, J. Hoorneman and J. Govers of TU Delft.
+   ! The routine is based on the routine as written by J. Jonkman of NREL/NWTC for use
+   ! in the IEA Annex XXIII OC3 studies.
+
    ! DO NOT REMOVE or MODIFY LINES starting with "!DEC$" or "!GCC$"
    ! !DEC$ specifies attributes for IVF and !GCC$ specifies attributes for gfortran
-   !
+
    ! Note that gfortran v5.x on Mac produces compiler errors with the DLLEXPORT attribute,
-   ! so I've added the compiler directive IMPLICIT_DLLEXPORT.
+   ! so the compiler directive IMPLICIT_DLLEXPORT is added.
 
 USE, INTRINSIC  :: ISO_C_Binding
 USE             :: FunctionToolbox
 USE             :: Filters
 
-IMPLICIT                        NONE
+IMPLICIT NONE
 #ifndef IMPLICIT_DLLEXPORT
 !GCC$ ATTRIBUTES DLLEXPORT :: DISCON
 #endif
@@ -55,8 +58,8 @@ REAL(4)                      :: HorWindV                                        
 REAL(4)                      :: IPC_aziAngle                                 	! Rotor azimuth angle [rad].
 REAL(4), PARAMETER           :: IPC_KI          =	0.0000000008                ! Integral gain for the individual pitch controller, [-].
 REAL(4), PARAMETER           :: IPC_KNotch      =	1                           ! Notch filter gain for the individual pitch controller, [-].
-REAL(4), PARAMETER           :: IPC_omegaLP     =	1000.0                      ! Low pass filter corner frequency for the individual pitch controller, [rad/s].
-REAL(4), PARAMETER           :: IPC_omegaNotch  =	1.269330365                 ! Notch filter corner frequency for the individual pitch controller, [rad/s].
+REAL(4), PARAMETER           :: IPC_omegaLP     =	1000.0                      ! Low pass filter corner frequency for the individual pitch controller, [Hz].
+REAL(4), PARAMETER           :: IPC_omegaNotch  =	1.269330365                 ! Notch filter corner frequency for the individual pitch controller, [Hz].
 REAL(4), PARAMETER           :: IPC_phi         =	0.436332313                 ! Phase offset added to the azimuth angle for the individual pitch controller, [rad].
 REAL(4)                      :: IPC_PitComF (3)                                 ! Commanded pitch of each blade as calculated by the individual pitch controller, F stands for low pass filtered, [rad].
 REAL(4), PARAMETER           :: IPC_zetaLP      =	1.0                         ! Low pass filter damping factor for the individual pitch controller, [-].
@@ -100,15 +103,15 @@ REAL(4), SAVE                :: VS_Slope25                                      
 REAL(4), PARAMETER           :: VS_SlPc       	=	10.0                       	! Rated generator slip percentage in Region 2 1/2, [%].
 REAL(4), SAVE                :: VS_SySp                                         ! Synchronous speed of region 2 1/2 induction generator, [rad/s].
 REAL(4), SAVE                :: VS_TrGnSp                                       ! Transitional generator speed (HSS side) between regions 2 and 2 1/2, [rad/s].
-REAL(4), SAVE                :: Y_AccErr										! Accumulated yaw error [rad]
-REAL(4)                      :: Y_ErrLPFFast									! Filtered yaw error by fast low pass filter [rad]
-REAL(4)                      :: Y_ErrLPFSlow									! Filtered yaw error by slow low pass filter [rad]
-REAL(4), PARAMETER           :: Y_ErrThresh   	=	1.745329252               	! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512)
-REAL(4), PARAMETER           :: Y_YawRate     	=	0.005235988               	! Yaw rate [rad/s]
-REAL(4)                      :: Y_MErr                                          ! Measured yaw error [rad]
-REAL(4), PARAMETER           :: Y_omegaLPFast 	=	1.0							! Corner frequency fast low pass filter
-REAL(4), PARAMETER           :: Y_omegaLPSlow 	=	0.016666667					! Corner frequency slow low pass filter
-REAL(4), SAVE                :: Y_YawEndT										! Yaw end time. Indicates the time up until which the yaws with a fixed rate
+REAL(4), SAVE                :: Y_AccErr										! Accumulated yaw error [rad].
+REAL(4)                      :: Y_ErrLPFFast									! Filtered yaw error by fast low pass filter [rad].
+REAL(4)                      :: Y_ErrLPFSlow									! Filtered yaw error by slow low pass filter [rad].
+REAL(4), PARAMETER           :: Y_ErrThresh   	=	1.745329252               	! Error threshold [rad]. Turbine begins to yaw when it passes this. (104.71975512).
+REAL(4), PARAMETER           :: Y_YawRate     	=	0.005235988               	! Yaw rate [rad/s].
+REAL(4)                      :: Y_MErr                                          ! Measured yaw error [rad].
+REAL(4), PARAMETER           :: Y_omegaLPFast 	=	1.0							! Corner frequency fast low pass filter, [Hz].
+REAL(4), PARAMETER           :: Y_omegaLPSlow 	=	0.016666667					! Corner frequency slow low pass filter, 1/60 [Hz].
+REAL(4), SAVE                :: Y_YawEndT										! Yaw end time, [s]. Indicates the time up until which the yaws with a fixed rate.
 
 INTEGER(4)                   :: ErrStat
 INTEGER(4)                   :: I                                               ! Generic index.
@@ -208,8 +211,8 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	PC_GK      = 1.0/( 1.0 + PitCom(1)/PC_KK )   ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
 	IntSpdErr  = PitCom(1)/( PC_GK*PC_KI )       ! This will ensure that the pitch angle is unchanged if the initial SpdErr is zero
 	PitCom     = BlPitch                         ! This will ensure that the variable speed controller picks the correct control region and the pitch controller picks the correct gain on the first call
-	Y_AccErr   = 0.0
-	Y_YawEndT  = -1.0
+	Y_AccErr   = 0.0                             ! This will ensure that the accumulated yaw error starts at zero
+	Y_YawEndT  = -1.0                            ! This will ensure that the initial yaw end time is lower than the actual time to prevent initial yawing
 
 	LastTime   = Time                            ! This will ensure that generator speed filter will use the initial value of the generator speed on the first pass
 	LastTimePC = Time - DT                       ! This will ensure that the pitch  controller is called on the first pass
@@ -383,7 +386,7 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 		! Compute the generator torque, which depends on which region we are in:
 
 	IF ( (   GenSpeedF >= VS_RtGnSp ) .OR. (  PitCom(1) >= VS_Rgn3MP ) )  THEN ! We are in region 3 - power is constant
-		GenTrq = VS_RtTq/GenSpeedF
+		GenTrq = VS_RtPwr/GenSpeedF
 	ELSEIF ( GenSpeedF <= VS_CtInSp )  THEN                                    ! We are in region 1 - torque is zero
 		GenTrq = 0.0
 	ELSEIF ( GenSpeedF <  VS_Rgn2Sp )  THEN                                    ! We are in region 1 1/2 - linear ramp in torque from zero to optimal
@@ -458,22 +461,15 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 	CALL IPC(rootMOOP, IPC_aziAngle, DT, IPC_KI, IPC_KNotch, IPC_omegaLP, IPC_omegaNotch, IPC_phi, IPC_zetaLP, IPC_zetaNotch, iStatus, NumBl, IPC_PitComF)
 
-		! Superimpose the individual commands to get the total pitch command;
-		!   saturate the overall command using the pitch angle limits:
 
-		! Saturate the overall commanded pitch using the pitch rate limit:
-		! NOTE: Since the current pitch angle may be different for each blade
-		!       (depending on the type of actuator implemented in the structural
-		!       dynamics model), this pitch rate limit calculation and the
-		!       resulting overall pitch angle command may be different for each
-		!       blade.
+        ! Combine and saturate all pitch commands:
 
 	DO K = 1,NumBl ! Loop through all blades
 
 		 PitComT (K)  = PitComP + PitComI                    			! Overall command (unsaturated)
-		 PitComT (K)  = saturate(PitComT(K),PC_SetPnt,PC_MaxPit)		! Saturate the overall command using the pitch angle limits
-		 PitComT (K)  = PitComT(K) + IPC_PitComF(K)
-		 PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)
+		 PitComT (K)  = saturate(PitComT(K),PC_SetPnt,PC_MaxPit)		! Saturate the overall command using the pitch set point
+		 PitComT (K)  = PitComT(K) + IPC_PitComF(K)                     ! Add the individual pitch command
+		 PitComT (K)  = saturate(PitComT(K),PC_MinPit,PC_MaxPit)        ! Saturate the overall command using the pitch angle limits
 
 		 PitRate(K) = ( PitComT(K) - BlPitch(K) )/ElapTime				! Pitch rate of blade K (unsaturated)
 		 PitRate(K) = saturate( PitRate(K), -1.0*PC_MaxRat, PC_MaxRat )	! Saturate the pitch rate of blade K using its maximum absolute value
@@ -551,7 +547,8 @@ IF ( ( iStatus >= 0 ) .AND. ( aviFAIL >= 0 ) )  THEN  ! Only compute control cal
 
 
 !------------------------------------------------------------------------------------------------------------------------------
-
+! Save and load saved variables in case of crash
+!------------------------------------------------------------------------------------------------------------------------------
 
 ELSEIF ( iStatus == -8 )  THEN
 
