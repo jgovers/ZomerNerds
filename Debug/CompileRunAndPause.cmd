@@ -1,11 +1,12 @@
-:: Compiling and Testing Discon.f90
+:: Compiling DISCON dll and run Test 18
+:: Pauses afterwards so command window output can be read
 
-:: Change this to the absolute path if this script is not located in \CertTest\5MW_Baseline\ServoData\Source. In that
-:: case also make sure the correct drive is selected 
-set "FASTdir=..\..\..\.."
+:: Change these to the absolute path of FAST. In that
+:: case also make sure the correct drive is selected
+set "FASTdir=C:\FAST"
 
 :: Go to the correct drive
-:: C:
+C:
 
 :: Remove old .dll file
 DEL %FASTdir%\CertTest\5MW_Baseline\ServoData\DISCON_gwin32.dll
