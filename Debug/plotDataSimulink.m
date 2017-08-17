@@ -5,8 +5,8 @@ clc
 
 %% Settings
 totalTime = tic;
-timeStamp = 'rc';               % set to 'rc' to just get the most recent folder
-testFile = 'Test18.out';      % Name of the test file to read
+timeStamp = '2017_08_16_1758';               % set to 'rc' to just get the most recent folder
+testFile = 'Test18.SL.out';      % Name of the test file to read
 runCmdFromHere = false;          % Run the CompileRunAndDebug.cmd file from this matlab script
 saveAllFigures = true;          % Automatically save all figures in the debug folder
 
@@ -78,14 +78,10 @@ ylabel('Pitch [deg]')
 RootMtotb1 = sqrt(out.RootMxb1.^2 + out.RootMyb1.^2 + out.RootMzb1.^2);
 
 figure
-title('Blade 1 root bending moments')
+title('Blade 1 root out of plane bending moment')
 hold on
-plot(out.Time,out.RootMxb1)
 plot(out.Time,out.RootMyb1)
-plot(out.Time,out.RootMzb1)
-plot(out.Time,RootMtotb1)
 ylabel('Moment [kN*m]')
-legend('x','y','z','total')
 
 %% Save figures
 if(saveAllFigures)
