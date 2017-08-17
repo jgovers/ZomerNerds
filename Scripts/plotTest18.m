@@ -13,7 +13,7 @@ testFile = 'Test18.out';        % Name of the test file to read
 runCmdFromHere = false;         % Run RunTest18.cmd from this matlab script
 
 %% Loading
-debugFolder = '..\..\..\';      % Directory were .out file is located
+debugFolder = '\CertTest';      % Directory were .out file is located
 
 if(runCmdFromHere)              % Run Test18 first if true
     dos('RunTest18.cmd');
