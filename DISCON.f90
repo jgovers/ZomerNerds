@@ -264,6 +264,11 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	  ErrMsg  = 'VS_RtPwr must not be negative.'
 	ENDIF
 
+    IF ( VS_RtTq  <  0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'VS_RtTw must not be negative.'
+	ENDIF
+
 	IF ( VS_Rgn2K  <  0.0 )  THEN
 	  aviFAIL = -1
 	  ErrMsg  = 'VS_Rgn2K must not be negative.'
@@ -289,6 +294,11 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	  ErrMsg  = 'PC_KK must be greater than zero.'
 	ENDIF
 
+	IF ( PC_KP     <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'PC_KP must be greater than zero.'
+	ENDIF
+
 	IF ( PC_RefSpd <= 0.0 )  THEN
 	  aviFAIL = -1
 	  ErrMsg  = 'PC_RefSpd must be greater than zero.'
@@ -303,6 +313,45 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	  aviFAIL = -1
 	  ErrMsg  = 'PC_MinPit must be less than PC_MaxPit.'
 	ENDIF
+
+	IF ( IPC_KI <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'IPC_KI must be greater than zero.'
+	ENDIF
+
+	IF ( IPC_KNotch <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'IPC_KNotch must be greater than zero.'
+	ENDIF
+
+	IF ( IPC_omegaLP <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'IPC_omegaLP must be greater than zero.'
+	ENDIF
+
+	IF ( IPC_omegaNotch <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'IPC_omegaNotch must be greater than zero.'
+	ENDIF
+
+	IF ( IPC_phi <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'IPC_phi must be greater than zero.'
+	ENDIF
+
+	IF ( IPC_zetaLP <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'IPC_zetaLP must be greater than zero.'
+	ENDIF
+
+	IF ( IPC_zetaNotch <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'IPC_zetaNotch must be greater than zero.'
+	ENDIF
+
+
+
+
 
 	!..............................................................................................................................
 	! Initializing debug file
