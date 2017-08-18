@@ -349,8 +349,25 @@ IF ( iStatus == 0 )  THEN  ! .TRUE. if we're on the first call to the DLL
 	  ErrMsg  = 'IPC_zetaNotch must be greater than zero.'
 	ENDIF
 
+    IF ( Y_ErrThresh <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'Y_ErrThresh must be greater than zero.'
+	ENDIF
 
+	IF ( Y_YawRate <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'Y_YawRate must be greater than zero.'
+	ENDIF
 
+	IF ( Y_omegaLPFast <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'Y_omegaLPFast must be greater than zero.'
+	ENDIF
+
+	IF ( Y_omegaLPSlow <= 0.0 )  THEN
+	  aviFAIL = -1
+	  ErrMsg  = 'Y_omegaLPSlow must be greater than zero.'
+	ENDIF
 
 
 	!..............................................................................................................................
